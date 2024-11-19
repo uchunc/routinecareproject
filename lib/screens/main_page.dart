@@ -7,9 +7,11 @@ class MainPage extends StatefulWidget {
   _MainPageState createState() => _MainPageState();
 }
 
-class _MainPageState extends State<MainPage> {
+class _MainPageState extends State<MainPage>
+    with SingleTickerProviderStateMixin {
   DateTime selectedDate = DateTime.now();
   Map<String, List<String>> journalEntries = {}; // 날짜별 일지 저장
+  late TabController controller;
 
   String formatDate(DateTime date) {
     return "${date.year}-${date.month}-${date.day}";
@@ -18,12 +20,19 @@ class _MainPageState extends State<MainPage> {
   @override
   void initState() {
     super.initState();
+    controller = TabController(length: 3, vsync: this);
     // 초기에는 오늘 날짜를 선택한 상태로 시작
     WidgetsBinding.instance.addPostFrameCallback((_) {
       setState(() {
         selectedDate = DateTime.now();
       });
     });
+  }
+
+  @override
+  void dispose() {
+    controller!.dispose();
+    super.dispose();
   }
 
   @override
@@ -55,37 +64,53 @@ class _MainPageState extends State<MainPage> {
           ],
         ),
       ),
-      body: Column(
+      body: TabBarView(
+        controller: controller,
         children: [
-          Calendar(
-            date: selectedDate,
-            onDateSelected: (DateTime date) {
-              setState(() {
-                selectedDate = date;
-              });
-            },
-            journalEntries: journalEntries,
-          ),
-          Expanded(
-            child: JournalViewer(
-              selectedDate: selectedDate,
-              journalEntries: journalEntries,
-              onEntryChanged: (updatedEntries) {
-                setState(() {
-                  journalEntries[formatDate(selectedDate)] = updatedEntries;
-                });
-              },
+          // Tab 1: 커뮤니티
+          Center(child: Text('홈 페이지')),
+          // Tab 2: 홈
+          Center(
+            child: Column(
+              children: [
+                Calendar(
+                  date: selectedDate,
+                  onDateSelected: (DateTime date) {
+                    setState(() {
+                      selectedDate = date;
+                    });
+                  },
+                  journalEntries: journalEntries,
+                ),
+                Expanded(
+                  child: JournalViewer(
+                    selectedDate: selectedDate,
+                    journalEntries: journalEntries,
+                    onEntryChanged: (updatedEntries) {
+                      setState(() {
+                        journalEntries[formatDate(selectedDate)] = updatedEntries;
+                      });
+                    },
+                  ),
+                ),
+              ],
             ),
           ),
+
+          // Tab 3: 프로필
+          Center(child: Text('프로필 페이지')),
         ],
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 1,
-        items: [
-          BottomNavigationBarItem(icon: Icon(Icons.group), label: '커뮤니티'),
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: '홈'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: '프로필'),
+      bottomNavigationBar: TabBar(
+        controller: controller,
+        tabs: const <Tab>[
+          Tab(icon: Icon(Icons.group), text: '커뮤니티'),
+          Tab(icon: Icon(Icons.home), text: '홈'),
+          Tab(icon: Icon(Icons.person), text: '프로필'),
         ],
+        labelColor: Colors.deepPurple,
+        unselectedLabelColor: Colors.grey,
+        indicatorColor: Colors.deepPurple,
       ),
     );
   }
