@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../widgets/calendar.dart';
 import '../widgets/journal_entry.dart';
+import 'community_page.dart'; // 커뮤니티 페이지
+import 'profile_page.dart'; // 프로필 페이지
 
 class MainPage extends StatefulWidget {
   @override
@@ -20,12 +22,9 @@ class _MainPageState extends State<MainPage>
   @override
   void initState() {
     super.initState();
-    controller = TabController(length: 3, vsync: this);
-    // 초기에는 오늘 날짜를 선택한 상태로 시작
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      setState(() {
-        selectedDate = DateTime.now();
-      });
+    controller = TabController(length: 3, vsync: this, initialIndex: 1);
+    controller.addListener(() {
+      setState(() {}); // 탭 변경 시 상태 업데이트
     });
   }
 
@@ -35,10 +34,11 @@ class _MainPageState extends State<MainPage>
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
+  AppBar buildAppBar() {
+    if (controller.index == 1) {
+      // 홈 탭의 AppBar
+      return AppBar(
+        backgroundColor: Color(0xFFFAFAFA),
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -46,8 +46,10 @@ class _MainPageState extends State<MainPage>
               icon: Icon(Icons.chevron_left),
               onPressed: () {
                 setState(() {
-                  selectedDate =
-                      DateTime(selectedDate.year, selectedDate.month - 1);
+                  selectedDate = DateTime(
+                    selectedDate.year,
+                    selectedDate.month - 1,
+                  );
                 });
               },
             ),
@@ -56,19 +58,33 @@ class _MainPageState extends State<MainPage>
               icon: Icon(Icons.chevron_right),
               onPressed: () {
                 setState(() {
-                  selectedDate =
-                      DateTime(selectedDate.year, selectedDate.month + 1);
+                  selectedDate = DateTime(
+                    selectedDate.year,
+                    selectedDate.month + 1,
+                  );
                 });
               },
             ),
           ],
         ),
-      ),
+      );
+    } else {
+      // 다른 탭의 AppBar
+      return AppBar(
+        title: Text(controller.index == 0 ? '커뮤니티' : '프로필'),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: buildAppBar(),
       body: TabBarView(
         controller: controller,
         children: [
           // Tab 1: 커뮤니티
-          Center(child: Text('홈 페이지')),
+          CommunityApp(), // 커뮤니티 페이지 불러오기
           // Tab 2: 홈
           Center(
             child: Column(
@@ -98,7 +114,7 @@ class _MainPageState extends State<MainPage>
           ),
 
           // Tab 3: 프로필
-          Center(child: Text('프로필 페이지')),
+          ProfileApp(), // 프로필 페이지 불러오기
         ],
       ),
       bottomNavigationBar: TabBar(

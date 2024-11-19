@@ -9,6 +9,6 @@ class CommunityApp extends StatelessWidget {
           child: Text('커뮤니티 페이지'),
         )
       )
-    )
+    );
   }
 }

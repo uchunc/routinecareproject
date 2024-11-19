@@ -9,6 +9,6 @@ class ProfileApp extends StatelessWidget {
               child: Text('프로필 페이지'),
             )
         )
-    )
+    );
   }
 }
