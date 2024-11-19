@@ -6,9 +6,7 @@ class ProfileApp extends StatelessWidget {
     return Scaffold(
         body: Container(
             child: Center(
-              child: Text('프로필 페이지'),
-            )
-        )
-    )
+      child: Text('프로필 페이지'),
+    )));
   }
 }
