@@ -5,6 +5,8 @@ import 'community_page.dart'; // 커뮤니티 페이지
 import 'profile_page.dart'; // 프로필 페이지
 
 class MainPage extends StatefulWidget {
+  const MainPage({super.key});
+
   @override
   _MainPageState createState() => _MainPageState();
 }
@@ -38,12 +40,12 @@ class _MainPageState extends State<MainPage>
     if (controller.index == 1) {
       // 홈 탭의 AppBar
       return AppBar(
-        backgroundColor: Color(0xFFFAFAFA),
+        backgroundColor: const Color(0xFFFAFAFA),
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             IconButton(
-              icon: Icon(Icons.chevron_left),
+              icon: const Icon(Icons.chevron_left),
               onPressed: () {
                 setState(() {
                   selectedDate = DateTime(
@@ -55,7 +57,7 @@ class _MainPageState extends State<MainPage>
             ),
             Text('${selectedDate.year}년 ${selectedDate.month}월'),
             IconButton(
-              icon: Icon(Icons.chevron_right),
+              icon: const Icon(Icons.chevron_right),
               onPressed: () {
                 setState(() {
                   selectedDate = DateTime(

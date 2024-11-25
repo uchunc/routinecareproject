@@ -5,7 +5,8 @@ class JournalViewer extends StatefulWidget {
   final Map<String, List<String>> journalEntries;
   final ValueChanged<List<String>> onEntryChanged;
 
-  JournalViewer({
+  const JournalViewer({
+    super.key,
     required this.selectedDate,
     required this.journalEntries,
     required this.onEntryChanged,
@@ -55,14 +56,14 @@ class _JournalViewerState extends State<JournalViewer> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text("페이지를 삭제하겠습니까?"),
+        title: const Text("페이지를 삭제하겠습니까?"),
         actions: [
           TextButton(
-            child: Text("취소"),
+            child: const Text("취소"),
             onPressed: () => Navigator.of(context).pop(),
           ),
           TextButton(
-            child: Text("삭제"),
+            child: const Text("삭제"),
             onPressed: () {
               setState(() {
                 currentEntries.removeAt(index);
@@ -85,14 +86,14 @@ class _JournalViewerState extends State<JournalViewer> {
           // 마지막 페이지는 + 버튼
           return Center(
             child: IconButton(
-              icon: Icon(Icons.add, size: 50),
+              icon: const Icon(Icons.add, size: 50),
               onPressed: addJournalPage,
             ),
           );
         } else {
           // 일지 작성 페이지
           return Padding(
-            padding: EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16),
             child: Column(
               children: [
                 Expanded(
@@ -107,15 +108,15 @@ class _JournalViewerState extends State<JournalViewer> {
                     },
                     maxLines: 10,
                     decoration: InputDecoration(
-                      border: OutlineInputBorder(),
+                      border: const OutlineInputBorder(),
                       labelText: '일지 ${index + 1}',
                     ),
                   ),
                 ),
-                SizedBox(height: 16),
+                const SizedBox(height: 16),
                 ElevatedButton(
                   onPressed: () => deleteJournalPage(index),
-                  child: Text("페이지 삭제"),
+                  child: const Text("페이지 삭제"),
                 ),
               ],
             ),

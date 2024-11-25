@@ -5,7 +5,8 @@ class Calendar extends StatefulWidget {
   final Function(DateTime) onDateSelected;
   final Map<String, List<String>> journalEntries;
 
-  Calendar({
+  const Calendar({
+    super.key,
     required this.date,
     required this.onDateSelected,
     required this.journalEntries,
@@ -54,7 +55,7 @@ class _CalendarState extends State<Calendar> {
 
     _scrollController.animateTo(
       position,
-      duration: Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
     );
   }
@@ -105,7 +106,7 @@ class _CalendarState extends State<Calendar> {
   Widget build(BuildContext context) {
     int lastDay = DateTime(widget.date.year, widget.date.month + 1, 0).day;
 
-    return Container(
+    return SizedBox(
       height: 100,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
