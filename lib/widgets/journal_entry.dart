@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 
 class JournalViewer extends StatefulWidget {
   final DateTime selectedDate;
@@ -18,6 +20,9 @@ class JournalViewer extends StatefulWidget {
 
 class _JournalViewerState extends State<JournalViewer> {
   late List<String> currentEntries;
+  late List<String?> imagePaths; // 이미지 경로를 null로 초기화
+  late List<TextEditingController> controllers; // 텍스트 컨트롤러 추가
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
@@ -33,40 +38,72 @@ class _JournalViewerState extends State<JournalViewer> {
     }
   }
 
-  void _loadEntries() {
-    // 선택된 날짜의 일지 페이지를 로드
-    String dateKey = formatDate(widget.selectedDate);
-    setState(() {
-      currentEntries = widget.journalEntries[dateKey] ?? [];
-    });
-  }
-
   String formatDate(DateTime date) {
     return "${date.year}-${date.month}-${date.day}";
   }
 
-  void addJournalPage() {
+  void _loadEntries() {
+    String dateKey = formatDate(widget.selectedDate);
     setState(() {
-      currentEntries.add("");
+      currentEntries = widget.journalEntries[dateKey] ?? [];
+      imagePaths = List.generate(
+          currentEntries.length, (index) => null); // 각 일지에 대해 이미지 경로를 null로 초기화
+      controllers = List.generate(
+          currentEntries.length,
+          (index) => TextEditingController(
+              text: currentEntries[index])); // 텍스트 컨트롤러 추가
+    });
+  }
+
+  void addJournalPage() async {
+    int newIndex = currentEntries.length;
+
+    // 이미지 선택 전에 imagePaths와 controllers 리스트에 null을 추가하여 빈 값이 되지 않도록 함
+    setState(() {
+      imagePaths.add(null);
+      controllers.add(TextEditingController());
+    });
+
+    await _pickImage(newIndex); // 이미지 선택 후 추가
+
+    setState(() {
+      currentEntries.add(""); // 빈 일지 텍스트 추가
       widget.onEntryChanged(currentEntries);
     });
+  }
+
+  Future<void> _pickImage(int index) async {
+    // 이미지 선택 함수에서 인덱스가 유효한지 확인
+    if (index >= imagePaths.length) {
+      return; // 유효하지 않으면 함수 종료
+    }
+    final XFile? pickedFile =
+        await _picker.pickImage(source: ImageSource.gallery);
+
+    if (pickedFile != null) {
+      setState(() {
+        imagePaths[index] = pickedFile.path; // 선택된 이미지 경로 저장
+      });
+    }
   }
 
   void deleteJournalPage(int index) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("페이지를 삭제하겠습니까?"),
+        title: Text("페이지를 삭제하겠습니까?"),
         actions: [
           TextButton(
-            child: const Text("취소"),
+            child: Text("취소"),
             onPressed: () => Navigator.of(context).pop(),
           ),
           TextButton(
-            child: const Text("삭제"),
+            child: Text("삭제"),
             onPressed: () {
               setState(() {
                 currentEntries.removeAt(index);
+                imagePaths.removeAt(index); // 해당 일지의 이미지도 삭제
+                controllers.removeAt(index); // 텍스트 컨트롤러도 삭제
                 widget.onEntryChanged(currentEntries);
               });
               Navigator.of(context).pop();
@@ -83,23 +120,28 @@ class _JournalViewerState extends State<JournalViewer> {
       itemCount: currentEntries.length + 1, // +1 to include the Add Page button
       itemBuilder: (context, index) {
         if (index == currentEntries.length) {
-          // 마지막 페이지는 + 버튼
           return Center(
             child: IconButton(
-              icon: const Icon(Icons.add, size: 50),
+              icon: Icon(Icons.add_a_photo, size: 50),
               onPressed: addJournalPage,
             ),
           );
         } else {
-          // 일지 작성 페이지
           return Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
+                if (imagePaths[index] != null && imagePaths[index]!.isNotEmpty)
+                  Image.file(
+                    File(imagePaths[index]!),
+                    height: 200,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                  ),
+                SizedBox(height: 16),
                 Expanded(
                   child: TextField(
-                    controller:
-                        TextEditingController(text: currentEntries[index]),
+                    controller: controllers[index],
                     onChanged: (value) {
                       setState(() {
                         currentEntries[index] = value;
