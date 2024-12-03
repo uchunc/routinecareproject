@@ -67,7 +67,7 @@ class _DetailedProfilePageState extends State<DetailedProfilePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('운동 경력 관리'),
+        title: const Text('프로필 정보'),
         centerTitle: true,
         actions: [
           TextButton(
