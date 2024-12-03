@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "410375819014",
+    "project_id": "workoutzzang-9b6f7",
+    "storage_bucket": "workoutzzang-9b6f7.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:410375819014:android:8cf0d3aa028cba69d3d887",
+        "android_client_info": {
+          "package_name": "com.teamproject.workoutzzang"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "410375819014-0ca6g3dq498tqb6mqacru68lpb8pv5h5.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.teamproject.workoutzzang",
+            "certificate_hash": "fcfd0e81f6a835e9f03c7ee1b575209d67e71986"
+          }
+        },
+        {
+          "client_id": "410375819014-606e0groqig45t2bln7leuqet4cdoq6s.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC-oCQ4r-kEYZXeUnS8d4ypTila10g6VxM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "410375819014-606e0groqig45t2bln7leuqet4cdoq6s.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "410375819014-6nfeit0r1q91mklka3n998mg9q66922e.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.teamproject.workoutzzang"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
