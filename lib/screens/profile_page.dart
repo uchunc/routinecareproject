@@ -1,15 +1,47 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'login_page.dart';
 import 'detailed_profile_page.dart';
 
-class ProfileApp extends StatelessWidget {
+class ProfileApp extends StatefulWidget {
   const ProfileApp({super.key});
+
+  @override
+  State<ProfileApp> createState() => _ProfileAppState();
+}
+
+class _ProfileAppState extends State<ProfileApp> {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  String _nickname = "닉네임을 설정하세요"; // 기본값
+  String _profileImageUrl = ""; // 기본값
+  String _bio = "소개를 추가하세요"; // 본인 소개 기본값
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    final user = _auth.currentUser;
+    if (user != null) {
+      final userDoc = await _firestore.collection('users').doc(user.uid).get();
+      if (userDoc.exists) {
+        setState(() {
+          _nickname = userDoc['닉네임'] ?? "닉네임을 설정하세요";
+          _profileImageUrl = userDoc['프로필 사진'] ?? "";
+          _bio = userDoc['본인 소개'] ?? "소개를 추가하세요"; // 본인 소개 데이터 로드
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -22,22 +54,24 @@ class ProfileApp extends StatelessWidget {
                 children: [
                   CircleAvatar(
                     radius: 40,
-                    backgroundImage: AssetImage('assets/profile.jpg'), // 프로필 이미지
+                    backgroundImage: _profileImageUrl.isNotEmpty
+                        ? NetworkImage(_profileImageUrl)
+                        : const AssetImage('assets/profile.jpg') as ImageProvider,
                   ),
                   const SizedBox(width: 16),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
+                    children: [
                       Text(
-                        '맨몸 운동 이준명',
-                        style: TextStyle(
+                        _nickname,
+                        style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       Text(
-                        'instagram: zakta__//',
-                        style: TextStyle(
+                        _bio, // 본인 소개 표시
+                        style: const TextStyle(
                           fontSize: 14,
                           color: Colors.grey,
                         ),
@@ -48,7 +82,12 @@ class ProfileApp extends StatelessWidget {
                   IconButton(
                     icon: const Icon(Icons.chevron_right),
                     onPressed: () {
-                      // 프로필 상세 페이지 이동
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const DetailedProfilePage(),
+                        ),
+                      );
                     },
                   ),
                 ],

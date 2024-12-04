@@ -1,6 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:image_picker/image_picker.dart';
 
 class DetailedProfilePage extends StatefulWidget {
   const DetailedProfilePage({super.key});
@@ -12,6 +15,7 @@ class DetailedProfilePage extends StatefulWidget {
 class _DetailedProfilePageState extends State<DetailedProfilePage> {
   final _firestore = FirebaseFirestore.instance;
   final _auth = FirebaseAuth.instance;
+  final _firebaseStorage = FirebaseStorage.instance;
 
   final _nicknameController = TextEditingController();
   final _careerController = TextEditingController();
@@ -21,6 +25,10 @@ class _DetailedProfilePageState extends State<DetailedProfilePage> {
   final _fatPercentageController = TextEditingController();
   final _muscleMassController = TextEditingController();
   final _bmiController = TextEditingController();
+  final _bioController = TextEditingController(); // 본인 소개 추가
+
+  File? _profileImage;
+  String? _profileImageUrl;
 
   @override
   void initState() {
@@ -42,6 +50,8 @@ class _DetailedProfilePageState extends State<DetailedProfilePage> {
           _fatPercentageController.text = userDoc['체지방률'] ?? '';
           _muscleMassController.text = userDoc['골격근량'] ?? '';
           _bmiController.text = userDoc['BMI'] ?? '';
+          _bioController.text = userDoc['본인 소개'] ?? ''; // 본인 소개 로드
+          _profileImageUrl = userDoc['프로필 사진'] ?? '';
         });
       }
     }
@@ -59,9 +69,49 @@ class _DetailedProfilePageState extends State<DetailedProfilePage> {
         '체지방률': _fatPercentageController.text,
         '골격근량': _muscleMassController.text,
         'BMI': _bmiController.text,
+        '본인 소개': _bioController.text, // 본인 소개 저장
+        '프로필 사진': _profileImageUrl,
       });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('저장되었습니다!')),
+      );
+    }
+  }
+
+  Future<void> _pickAndUploadImage() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    final picker = ImagePicker();
+    final pickedImage = await picker.pickImage(source: ImageSource.gallery);
+
+    if (pickedImage != null) {
+      final file = File(pickedImage.path);
+      setState(() {
+        _profileImage = file;
+      });
+
+      // Firebase Storage 경로
+      final storageRef = _firebaseStorage
+          .ref()
+          .child('profile_images/${user.uid}/profile.jpg');
+
+      // 업로드
+      await storageRef.putFile(file);
+
+      // 다운로드 URL 가져오기
+      final downloadUrl = await storageRef.getDownloadURL();
+      setState(() {
+        _profileImageUrl = downloadUrl;
+      });
+
+      // Firestore에 URL 저장
+      await _firestore.collection('users').doc(user.uid).update({
+        '프로필 사진': downloadUrl,
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('프로필 사진이 업로드되었습니다!')),
       );
     }
   }
@@ -83,17 +133,41 @@ class _DetailedProfilePageState extends State<DetailedProfilePage> {
         child: Column(
           children: [
             // 프로필 이미지 섹션
-            const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: CircleAvatar(
-                radius: 80,
-                backgroundImage: AssetImage('assets/profile.jpg'), // 이미지
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Stack(
+                children: [
+                  CircleAvatar(
+                    radius: 80,
+                    backgroundImage: _profileImage != null
+                        ? FileImage(_profileImage!)
+                        : (_profileImageUrl != null && _profileImageUrl!.isNotEmpty)
+                        ? NetworkImage(_profileImageUrl!) as ImageProvider
+                        : const AssetImage('assets/profile.jpg'),
+                  ),
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: IconButton(
+                      icon: const Icon(Icons.camera_alt),
+                      onPressed: _pickAndUploadImage,
+                    ),
+                  ),
+                ],
               ),
             ),
             // 닉네임 설정
             _buildEditableContainer(
               title: '닉네임',
               controller: _nicknameController,
+            ),
+            // 본인 소개 섹션
+            _buildEditableContainer(
+              title: '본인 소개',
+              controller: _bioController,
+              maxLines: 1,
+              validationMessage: '본인 소개는 20자 이하로 입력해야 합니다.',
+              maxLength: 20,
             ),
             // 운동 경력
             _buildEditableContainer(
@@ -131,7 +205,9 @@ class _DetailedProfilePageState extends State<DetailedProfilePage> {
     required String title,
     TextEditingController? controller,
     Widget? child,
+    String? validationMessage,
     int maxLines = 1,
+    int? maxLength,
   }) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -158,7 +234,15 @@ class _DetailedProfilePageState extends State<DetailedProfilePage> {
                 TextField(
                   controller: controller,
                   maxLines: maxLines,
-                  decoration: InputDecoration.collapsed(hintText: title),
+                  maxLength: maxLength, // 최대 길이 설정
+                  decoration: InputDecoration(
+                    counterText: '', // 글자 수 제한 표시 제거
+                    hintText: title,
+                    errorText: validationMessage != null &&
+                        controller!.text.length > maxLength!
+                        ? validationMessage
+                        : null,
+                  ),
                 ),
           ],
         ),

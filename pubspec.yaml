@@ -28,14 +28,15 @@ environment:
 # the latest version available on pub.dev. To see which dependencies have newer
 # versions available, run `flutter pub outdated`.
 dependencies:
-  file_selector_macos: ^0.9.4+2
   flutter:
     sdk: flutter
-  image_picker: ^0.8.7+3
-  firebase_core: ^3.8.0 # 최신 버전으로 업그레이드
-  firebase_auth: ^5.3.3 # 현재 사용 중인 버전 유지
-  google_sign_in: ^5.0.7
-  cloud_firestore: ^5.5.0 # Firestore 버전을 업그레이드
+  image_picker: ^0.8.7+4 # 이미지 선택 라이브러리
+  firebase_core: ^3.8.0 # 최신 안정 버전
+  firebase_auth: ^5.3.3 # firebase_core와 호환되는 최신 버전
+  cloud_firestore: ^5.4.0 # firebase_core와 호환되는 최신 버전
+  firebase_storage: ^12.3.6 # firebase_core와 호환되는 최신 버전
+  google_sign_in: ^6.1.0 # 최신 버전
+
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
