@@ -13,6 +13,7 @@ class _DetailedProfilePageState extends State<DetailedProfilePage> {
   final _firestore = FirebaseFirestore.instance;
   final _auth = FirebaseAuth.instance;
 
+  final _nicknameController = TextEditingController();
   final _careerController = TextEditingController();
   final _goalController = TextEditingController();
   final _heightController = TextEditingController();
@@ -33,6 +34,7 @@ class _DetailedProfilePageState extends State<DetailedProfilePage> {
       final userDoc = await _firestore.collection('users').doc(user.uid).get();
       if (userDoc.exists) {
         setState(() {
+          _nicknameController.text = userDoc['닉네임'] ?? '';
           _careerController.text = userDoc['운동 경력'] ?? '';
           _goalController.text = userDoc['목표'] ?? '';
           _heightController.text = userDoc['키'] ?? '';
@@ -49,6 +51,7 @@ class _DetailedProfilePageState extends State<DetailedProfilePage> {
     final user = _auth.currentUser;
     if (user != null) {
       await _firestore.collection('users').doc(user.uid).set({
+        '닉네임': _nicknameController.text,
         '운동 경력': _careerController.text,
         '목표': _goalController.text,
         '키': _heightController.text,
@@ -86,6 +89,11 @@ class _DetailedProfilePageState extends State<DetailedProfilePage> {
                 radius: 80,
                 backgroundImage: AssetImage('assets/profile.jpg'), // 이미지
               ),
+            ),
+            // 닉네임 설정
+            _buildEditableContainer(
+              title: '닉네임',
+              controller: _nicknameController,
             ),
             // 운동 경력
             _buildEditableContainer(
