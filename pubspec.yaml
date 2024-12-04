@@ -61,6 +61,7 @@ flutter:
     - assets/google_icon.png
     - assets/kakao_icon.png
     - assets/naver_icon.png
+    - assets/create_class.png
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
