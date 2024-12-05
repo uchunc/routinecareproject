@@ -22,6 +22,14 @@
           }
         },
         {
+          "client_id": "410375819014-hta1f4q5p49jl6rgfr42t7ks98el24jk.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.teamproject.workoutzzang",
+            "certificate_hash": "371fa4c9d4e5050c2a7707b7bf7763ddfc5793a8"
+          }
+        },
+        {
           "client_id": "410375819014-606e0groqig45t2bln7leuqet4cdoq6s.apps.googleusercontent.com",
           "client_type": 3
         }
