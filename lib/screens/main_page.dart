@@ -41,6 +41,7 @@ class _MainPageState extends State<MainPage>
       // 홈 탭의 AppBar
       return AppBar(
         backgroundColor: const Color(0xFFFAFAFA),
+        automaticallyImplyLeading: false,
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -73,6 +74,7 @@ class _MainPageState extends State<MainPage>
     } else {
       // 다른 탭의 AppBar
       return AppBar(
+        automaticallyImplyLeading: false,
         title: Text(controller.index == 0 ? '커뮤니티' : '프로필'),
       );
     }

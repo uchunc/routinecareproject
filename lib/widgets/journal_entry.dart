@@ -56,35 +56,42 @@ class _JournalViewerState extends State<JournalViewer> {
   }
 
   void addJournalPage() async {
-    int newIndex = currentEntries.length;
+    // 이미지 경로 추가를 위해 리스트 확장
+    imagePaths.add(null);
 
-    // 이미지 선택 전에 imagePaths와 controllers 리스트에 null을 추가하여 빈 값이 되지 않도록 함
-    setState(() {
-      imagePaths.add(null);
-      controllers.add(TextEditingController());
-    });
+    final bool imageAdded = await _pickImage(imagePaths.length - 1);
 
-    await _pickImage(newIndex); // 이미지 선택 후 추가
-
-    setState(() {
-      currentEntries.add(""); // 빈 일지 텍스트 추가
-      widget.onEntryChanged(currentEntries);
-    });
+    if (imageAdded) {
+      // 이미지가 성공적으로 추가된 경우에만 데이터 추가
+      setState(() {
+        currentEntries.add(""); // 빈 텍스트로 초기화
+        controllers.add(TextEditingController()); // 텍스트 컨트롤러 추가
+        widget.onEntryChanged(currentEntries); // 상태 업데이트
+      });
+    } else {
+      // 이미지 선택이 취소된 경우 리스트 정리
+      setState(() {
+        imagePaths.removeLast(); // 마지막으로 추가된 빈 경로 제거
+      });
+    }
   }
 
-  Future<void> _pickImage(int index) async {
-    // 이미지 선택 함수에서 인덱스가 유효한지 확인
-    if (index >= imagePaths.length) {
-      return; // 유효하지 않으면 함수 종료
+  Future<bool> _pickImage(int index) async {
+    if (index < 0 || index >= imagePaths.length) {
+      return false; // 유효하지 않은 인덱스라면 중단
     }
+
     final XFile? pickedFile =
         await _picker.pickImage(source: ImageSource.gallery);
 
     if (pickedFile != null) {
       setState(() {
-        imagePaths[index] = pickedFile.path; // 선택된 이미지 경로 저장
+        imagePaths[index] = pickedFile.path; // 이미지 경로 설정
       });
+      return true; // 이미지 선택 성공
     }
+
+    return false; // 이미지 선택 취소
   }
 
   void deleteJournalPage(int index) {
@@ -131,7 +138,9 @@ class _JournalViewerState extends State<JournalViewer> {
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                if (imagePaths[index] != null && imagePaths[index]!.isNotEmpty)
+                if (index < imagePaths.length &&
+                    imagePaths[index] != null &&
+                    imagePaths[index]!.isNotEmpty)
                   Image.file(
                     File(imagePaths[index]!),
                     height: 200,
