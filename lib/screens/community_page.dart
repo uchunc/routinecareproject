@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'create_class_page.dart'; // 새로운 페이지 임포트
 
 class CommunityApp extends StatefulWidget {
@@ -14,31 +12,7 @@ class CommunityApp extends StatefulWidget {
 
 class _CommunityAppState extends State<CommunityApp> {
   List<Map<String, dynamic>> classes = []; // 생성된 클래스 목록 (제목과 내용)
-  List<Map<String, dynamic>> classes = []; // 생성된 클래스 목록 (제목과 내용)
   String searchQuery = ''; // 검색어 저장
-  String? currentUserName; // 현재 로그인한 사용자의 닉네임
-
-  @override
-  void initState() {
-    super.initState();
-    _loadClasses(); // 클래스 불러오기
-    _loadCurrentUserName(); // 현재 사용자 닉네임 불러오기
-  }
-
-  Future<void> _loadCurrentUserName() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-      if (userDoc.exists) {
-        setState(() {
-          currentUserName = userDoc['닉네임']; // 현재 사용자 닉네임 저장
-        });
-      }
-    }
-  }
-
-  Future<void> _loadClasses() async {
-    final classDocs = await FirebaseFirestore.instance.collection('classes').get();
   String? currentUserName; // 현재 로그인한 사용자의 닉네임
 
   @override
@@ -78,22 +52,22 @@ class _CommunityAppState extends State<CommunityApp> {
   }
 
   void _showClassDetails(BuildContext context, Map<String, dynamic> classItem) {
-  bool isSubscribed = classItem['is_subscribed'] ?? false; // 초기 구독 상태 설정
-  int subscriptionCount = classItem['subscription_count'] ?? 0; // 구독 수 초기화
+  bool isSubscribed = classItem['is_subscribed'] ?? false; // 초기 구독 상태
+  int subscriptionCount = classItem['subscription_count'] ?? 0;
 
   showDialog(
     context: context,
     builder: (context) {
-      return StatefulBuilder( // 다이얼로그 내부에서 상태 갱신을 위해 StatefulBuilder 사용
+      return StatefulBuilder(
         builder: (context, setState) {
           return Dialog(
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12.0), // 다이얼로그 모서리 둥글게 설정
+              borderRadius: BorderRadius.circular(12.0),
             ),
             child: Container(
               padding: const EdgeInsets.all(16.0),
-              width: MediaQuery.of(context).size.width * 0.8, // 다이얼로그 너비 설정
-              height: MediaQuery.of(context).size.height * 0.8, // 다이얼로그 높이 설정
+              width: MediaQuery.of(context).size.width * 0.8,
+              height: MediaQuery.of(context).size.height * 0.8,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -102,74 +76,74 @@ class _CommunityAppState extends State<CommunityApp> {
                       CircleAvatar(
                         radius: 30,
                         backgroundImage: classItem['profile_image'] != null
-                            ? NetworkImage(classItem['profile_image']) // 네트워크 이미지 사용
-                            : const AssetImage('assets/default_profile.png') as ImageProvider, // 기본 프로필 이미지
+                            ? NetworkImage(classItem['profile_image'])
+                            : const AssetImage('assets/default_profile.png') as ImageProvider,
                       ),
-                      const SizedBox(width: 16), // 프로필과 텍스트 간격
+                      const SizedBox(width: 16),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            classItem['author'], // 커뮤니티 생성자 이름 표시
+                            classItem['author'],
                             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '본인 소개: ${classItem['bio'] ?? '소개가 없습니다.'}', // 소개 정보
+                            '본인 소개: ${classItem['bio'] ?? '소개가 없습니다.'}',
                             style: const TextStyle(color: Colors.grey),
                           ),
                         ],
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20), // 상단 콘텐츠와의 간격
+                  const SizedBox(height: 20),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween, // 제목과 구독 수를 양쪽 끝에 배치
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        classItem['title'], // 클래스 제목
+                        classItem['title'],
                         style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                       ),
                       Text(
-                        '구독: $subscriptionCount', // 구독 수 표시
+                        '구독: $subscriptionCount',
                         style: const TextStyle(fontSize: 16, color: Colors.grey),
                       ),
                     ],
                   ),
                   const SizedBox(height: 10),
-                  Text('${classItem['content']}'), // 클래스 내용
-                  const Spacer(), // 남은 공간 차지, 버튼을 아래로 이동
+                  Text('${classItem['content']}'),
+                  const Spacer(),
                   ElevatedButton(
                     onPressed: () async {
-                      final user = FirebaseAuth.instance.currentUser; // 현재 사용자 가져오기
+                      final user = FirebaseAuth.instance.currentUser;
                       if (user != null) {
                         if (isSubscribed) {
-                          subscriptionCount--; // 구독 수 감소
-                          isSubscribed = false; // 구독 취소 상태
+                          subscriptionCount--;
+                          isSubscribed = false;
                         } else {
-                          subscriptionCount++; // 구독 수 증가
-                          isSubscribed = true; // 구독 상태
+                          subscriptionCount++;
+                          isSubscribed = true;
                         }
 
-                        setState(() {}); // 다이얼로그 내부 상태 갱신
+                        setState(() {}); // StatefulBuilder 내 상태 갱신
 
                         await FirebaseFirestore.instance.collection('classes').doc(classItem['id']).update({
-                          'subscription_count': subscriptionCount, // Firestore에 구독 수 업데이트
-                          'is_subscribed': isSubscribed, // 구독 상태 저장
+                          'subscription_count': subscriptionCount,
+                          'is_subscribed': isSubscribed, // Firestore에 구독 상태 저장
                         });
                       }
                     },
-                    child: Text(isSubscribed ? '구독 취소' : '구독하기'), // 구독 상태에 따른 버튼 텍스트 변경
+                    child: Text(isSubscribed ? '구독 취소' : '구독하기'),
                   ),
                   const SizedBox(height: 20),
-                  if (currentUserName != null && classItem['author'] == currentUserName) // 본인 계정인지 확인
+                  if (currentUserName != null && classItem['author'] == currentUserName)
                     ElevatedButton(
                       onPressed: () async {
-                        await FirebaseFirestore.instance.collection('classes').doc(classItem['id']).delete(); // 클래스 삭제
-                        Navigator.pop(context); // 다이얼로그 닫기
+                        await FirebaseFirestore.instance.collection('classes').doc(classItem['id']).delete();
+                        Navigator.pop(context);
                         _loadClasses(); // 클래스 목록 새로고침
                       },
-                      child: const Text('클래스 삭제하기'), // 삭제 버튼
+                      child: const Text('클래스 삭제하기'),
                     ),
                 ],
               ),
