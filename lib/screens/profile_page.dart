@@ -56,7 +56,7 @@ class _ProfileAppState extends State<ProfileApp> {
                     radius: 40,
                     backgroundImage: _profileImageUrl.isNotEmpty
                         ? NetworkImage(_profileImageUrl)
-                        : const AssetImage('assets/profile.jpg') as ImageProvider,
+                        : const AssetImage('assets/profile.png') as ImageProvider,
                   ),
                   const SizedBox(width: 16),
                   Column(

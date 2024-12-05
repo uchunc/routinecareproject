@@ -143,7 +143,7 @@ class _DetailedProfilePageState extends State<DetailedProfilePage> {
                         ? FileImage(_profileImage!)
                         : (_profileImageUrl != null && _profileImageUrl!.isNotEmpty)
                         ? NetworkImage(_profileImageUrl!) as ImageProvider
-                        : const AssetImage('assets/profile.jpg'),
+                        : const AssetImage('assets/profile.png'),
                   ),
                   Positioned(
                     bottom: 0,

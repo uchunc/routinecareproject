@@ -43,51 +43,118 @@ class _CommunityAppState extends State<CommunityApp> {
           'title': doc['title'],
           'content': doc['content'],
           'author': doc['author'],
+          'profile_image': doc['profile_image'],
+          'bio' : doc['bio'],
+          'subscription_count' : doc['subscription_count'],
         };
       }).toList();
     });
   }
 
   void _showClassDetails(BuildContext context, Map<String, dynamic> classItem) {
+  bool isSubscribed = classItem['is_subscribed'] ?? false; // 초기 구독 상태 설정
+  int subscriptionCount = classItem['subscription_count'] ?? 0; // 구독 수 초기화
+
   showDialog(
     context: context,
     builder: (context) {
-      return Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12.0),  // 모서리 둥글게
-        ),
-        child: Container(
-          padding: const EdgeInsets.all(16.0),
-          width: MediaQuery.of(context).size.width * 0.8, // 넓이 설정
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                classItem['title'],
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+      return StatefulBuilder( // 다이얼로그 내부에서 상태 갱신을 위해 StatefulBuilder 사용
+        builder: (context, setState) {
+          return Dialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12.0), // 다이얼로그 모서리 둥글게 설정
+            ),
+            child: Container(
+              padding: const EdgeInsets.all(16.0),
+              width: MediaQuery.of(context).size.width * 0.8, // 다이얼로그 너비 설정
+              height: MediaQuery.of(context).size.height * 0.8, // 다이얼로그 높이 설정
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 30,
+                        backgroundImage: classItem['profile_image'] != null
+                            ? NetworkImage(classItem['profile_image']) // 네트워크 이미지 사용
+                            : const AssetImage('assets/default_profile.png') as ImageProvider, // 기본 프로필 이미지
+                      ),
+                      const SizedBox(width: 16), // 프로필과 텍스트 간격
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            classItem['author'], // 커뮤니티 생성자 이름 표시
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '본인 소개: ${classItem['bio'] ?? '소개가 없습니다.'}', // 소개 정보
+                            style: const TextStyle(color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20), // 상단 콘텐츠와의 간격
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween, // 제목과 구독 수를 양쪽 끝에 배치
+                    children: [
+                      Text(
+                        classItem['title'], // 클래스 제목
+                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        '구독: $subscriptionCount', // 구독 수 표시
+                        style: const TextStyle(fontSize: 16, color: Colors.grey),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Text('${classItem['content']}'), // 클래스 내용
+                  const Spacer(), // 남은 공간 차지, 버튼을 아래로 이동
+                  ElevatedButton(
+                    onPressed: () async {
+                      final user = FirebaseAuth.instance.currentUser; // 현재 사용자 가져오기
+                      if (user != null) {
+                        if (isSubscribed) {
+                          subscriptionCount--; // 구독 수 감소
+                          isSubscribed = false; // 구독 취소 상태
+                        } else {
+                          subscriptionCount++; // 구독 수 증가
+                          isSubscribed = true; // 구독 상태
+                        }
+
+                        setState(() {}); // 다이얼로그 내부 상태 갱신
+
+                        await FirebaseFirestore.instance.collection('classes').doc(classItem['id']).update({
+                          'subscription_count': subscriptionCount, // Firestore에 구독 수 업데이트
+                          'is_subscribed': isSubscribed, // 구독 상태 저장
+                        });
+                      }
+                    },
+                    child: Text(isSubscribed ? '구독 취소' : '구독하기'), // 구독 상태에 따른 버튼 텍스트 변경
+                  ),
+                  const SizedBox(height: 20),
+                  if (currentUserName != null && classItem['author'] == currentUserName) // 본인 계정인지 확인
+                    ElevatedButton(
+                      onPressed: () async {
+                        await FirebaseFirestore.instance.collection('classes').doc(classItem['id']).delete(); // 클래스 삭제
+                        Navigator.pop(context); // 다이얼로그 닫기
+                        _loadClasses(); // 클래스 목록 새로고침
+                      },
+                      child: const Text('클래스 삭제하기'), // 삭제 버튼
+                    ),
+                ],
               ),
-              const SizedBox(height: 10),
-              Text('내용: ${classItem['content']}'),
-              const SizedBox(height: 10),
-              Text('작성자: ${classItem['author']}'),
-              const SizedBox(height: 20),
-              if (currentUserName != null && classItem['author'] == currentUserName) // 본인 계정 확인
-                ElevatedButton(
-                  onPressed: () async {
-                    await FirebaseFirestore.instance.collection('classes').doc(classItem['id']).delete();
-                    Navigator.pop(context); // 모달 닫기
-                    _loadClasses(); // 클래스 목록 새로 고침
-                  },
-                  child: const Text('클래스 삭제하기'),
-                ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       );
     },
   );
 }
+
 
 
   @override
@@ -151,17 +218,32 @@ class _CommunityAppState extends State<CommunityApp> {
                 itemCount: filteredClasses.length,
                 itemBuilder: (context, index) {
                   return ListTile(
-                    leading: CircleAvatar(
-                      backgroundImage: NetworkImage(classItem['프로필 사진']), // 생성자 계정의 프로필 이미지 불러오기
-                    ),
+                    leading: filteredClasses[index]['profile_image'] != null
+                        ? CircleAvatar(
+                            backgroundImage: NetworkImage(filteredClasses[index]['profile_image']),
+                          )
+                        : CircleAvatar(child: Text('기본')), // 프로필 아이콘
                     title: Text(filteredClasses[index]['title']!), // 클래스 제목 표시
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    subtitle: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween, // 제목과 구독 수를 양쪽 끝으로 배치
                       children: [
-                        Text(filteredClasses[index]['content']!), // 클래스 내용 표시
-                        const SizedBox(height: 4), // 간격 추가
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              filteredClasses[index]['content']!, // 클래스 내용 표시
+                              maxLines: 1, // 최대 1줄로 제한
+                              overflow: TextOverflow.ellipsis, // 넘치는 내용은 '...'으로 표시
+                            ),
+                            const SizedBox(height: 4), // 간격 추가
+                            Text(
+                              filteredClasses[index]['author']!, // 클래스 생성자의 이름 표시
+                              style: TextStyle(color: Colors.grey), // 색상 변경
+                            ),
+                          ],
+                        ),
                         Text(
-                          filteredClasses[index]['author']!, // 클래스 생성자의 이름 표시
+                          '구독: ${filteredClasses[index]['subscription_count']}', // 구독 수 표시
                           style: TextStyle(color: Colors.grey), // 색상 변경
                         ),
                       ],
@@ -171,7 +253,7 @@ class _CommunityAppState extends State<CommunityApp> {
                 },
               ),
             ),
-            const Spacer(),
+            const SizedBox(height: 10),
             // 클래스 만들기 버튼
             Padding(
               padding: const EdgeInsets.all(16.0),
