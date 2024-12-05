@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'screens/login_page.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'screens/main_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,7 +16,11 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: '운동 기록 어플',
-      home: LoginPage(),
+      initialRoute: '/',
+      routes: {
+        '/': (context) => LoginPage(),
+        '/main_page': (context) => MainPage(),
+      },
     );
   }
 }
