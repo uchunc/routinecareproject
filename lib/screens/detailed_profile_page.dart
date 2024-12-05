@@ -25,7 +25,7 @@ class _DetailedProfilePageState extends State<DetailedProfilePage> {
   final _fatPercentageController = TextEditingController();
   final _muscleMassController = TextEditingController();
   final _bmiController = TextEditingController();
-  final _bioController = TextEditingController(); // 본인 소개 추가
+  final _bioController = TextEditingController(); // 메신저 추가
 
   File? _profileImage;
   String? _profileImageUrl;
@@ -50,7 +50,7 @@ class _DetailedProfilePageState extends State<DetailedProfilePage> {
           _fatPercentageController.text = userDoc['체지방률'] ?? '';
           _muscleMassController.text = userDoc['골격근량'] ?? '';
           _bmiController.text = userDoc['BMI'] ?? '';
-          _bioController.text = userDoc['본인 소개'] ?? ''; // 본인 소개 로드
+          _bioController.text = userDoc['메신저'] ?? ''; // 본인 소개 로드
           _profileImageUrl = userDoc['프로필 사진'] ?? '';
         });
       }
@@ -69,7 +69,7 @@ class _DetailedProfilePageState extends State<DetailedProfilePage> {
         '체지방률': _fatPercentageController.text,
         '골격근량': _muscleMassController.text,
         'BMI': _bmiController.text,
-        '본인 소개': _bioController.text, // 본인 소개 저장
+        '메신저': _bioController.text, // 메신저 저장
         '프로필 사진': _profileImageUrl,
       });
       ScaffoldMessenger.of(context).showSnackBar(
@@ -161,12 +161,12 @@ class _DetailedProfilePageState extends State<DetailedProfilePage> {
               title: '닉네임',
               controller: _nicknameController,
             ),
-            // 본인 소개 섹션
+            // 메신저 섹션
             _buildEditableContainer(
-              title: '본인 소개',
+              title: '카카오, 인스타 id',
               controller: _bioController,
               maxLines: 1,
-              validationMessage: '본인 소개는 20자 이하로 입력해야 합니다.',
+              validationMessage: '20자 이하로 입력해야 합니다.',
               maxLength: 20,
             ),
             // 운동 경력

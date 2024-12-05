@@ -52,114 +52,152 @@ class _CommunityAppState extends State<CommunityApp> {
     });
   }
 
-  void _showClassDetails(BuildContext context, Map<String, dynamic> classItem) {
-  bool isSubscribed = classItem['is_subscribed'] ?? false; // 초기 구독 상태
-  int subscriptionCount = classItem['subscription_count'] ?? 0;
+  void _showClassDetails(BuildContext context, Map<String, dynamic> classItem) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
 
-  showDialog(
-    context: context,
-    builder: (context) {
-      return StatefulBuilder(
-        builder: (context, setState) {
-          return Dialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12.0),
-            ),
-            child: Container(
-              padding: const EdgeInsets.all(16.0),
-              width: MediaQuery.of(context).size.width * 0.8,
-              height: MediaQuery.of(context).size.height * 0.8,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 30,
-                        backgroundImage: classItem['profile_image'] != null
-                            ? NetworkImage(classItem['profile_image'])
-                            : const AssetImage('assets/default_profile.png') as ImageProvider,
-                      ),
-                      const SizedBox(width: 30),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            classItem['author'],
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '소개: ${classItem['bio'] ?? '소개가 없습니다.'}',
-                            style: const TextStyle(color: Colors.grey),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '경력: ${classItem['career'] ?? '경력이 없습니다.'}',
-                            style: const TextStyle(color: Colors.grey),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        classItem['title'],
-                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                      ),
-                      Text(
-                        '구독: $subscriptionCount',
-                        style: const TextStyle(fontSize: 16, color: Colors.grey),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Text('${classItem['content']}'),
-                  const Spacer(),
-                  ElevatedButton(
-                    onPressed: () async {
-                      final user = FirebaseAuth.instance.currentUser;
-                      if (user != null) {
-                        if (isSubscribed) {
-                          subscriptionCount--;
-                          isSubscribed = false;
-                        } else {
-                          subscriptionCount++;
-                          isSubscribed = true;
-                        }
+    final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+    if (!userDoc.exists) return;
 
-                        setState(() {}); // StatefulBuilder 내 상태 갱신
+    final nickname = userDoc['닉네임'];
+    final messengerId = userDoc['메신저'];
+    final List<dynamic> subscribers = classItem['subscribers'] ?? [];
+    bool isSubscribed = subscribers.any((subscriber) => subscriber['nickname'] == nickname);
 
-                        await FirebaseFirestore.instance.collection('classes').doc(classItem['id']).update({
-                          'subscription_count': subscriptionCount,
-                          'is_subscribed': isSubscribed, // Firestore에 구독 상태 저장
-                        });
-                      }
-                    },
-                    child: Text(isSubscribed ? '구독 취소' : '구독하기'),
-                  ),
-                  const SizedBox(height: 20),
-                  if (currentUserName != null && classItem['author'] == currentUserName)
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12.0),
+              ),
+              child: Container(
+                padding: const EdgeInsets.all(16.0),
+                width: MediaQuery.of(context).size.width * 0.8,
+                height: MediaQuery.of(context).size.height * 0.8,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 30,
+                          backgroundImage: classItem['profile_image'] != null
+                              ? NetworkImage(classItem['profile_image'])
+                              : const AssetImage('assets/default_profile.png') as ImageProvider,
+                        ),
+                        const SizedBox(width: 30),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              classItem['author'],
+                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '소개: ${classItem['bio'] ?? '소개가 없습니다.'}',
+                              style: const TextStyle(color: Colors.grey),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          classItem['title'],
+                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                        ),
+                        Text(
+                          '구독: ${classItem['subscription_count']}',
+                          style: const TextStyle(fontSize: 16, color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Text('${classItem['content']}'),
+                    const Spacer(),
+                    // 구독자 목록 표시
+                    if (currentUserName != null && classItem['author'] == currentUserName)
+                      Expanded(
+                        child: ListView.builder(
+                          itemCount: subscribers.length,
+                          itemBuilder: (context, index) {
+                            final subscriber = subscribers[index];
+                            return ListTile(
+                              title: Text(subscriber['nickname']),
+                              subtitle: Text('메신저 ID: ${subscriber['messenger_id']}'),
+                            );
+                          },
+                        ),
+                      ),
                     ElevatedButton(
                       onPressed: () async {
-                        await FirebaseFirestore.instance.collection('classes').doc(classItem['id']).delete();
-                        Navigator.pop(context);
-                        _loadClasses(); // 클래스 목록 새로고침
+                        if (isSubscribed) {
+                          // 구독 취소
+                          await FirebaseFirestore.instance
+                              .collection('classes')
+                              .doc(classItem['id'])
+                              .update({
+                            'subscription_count': FieldValue.increment(-1),
+                            'subscribers': FieldValue.arrayRemove([
+                              {'nickname': nickname, 'messenger_id': messengerId}
+                            ]),
+                          });
+                          setState(() {
+                            isSubscribed = false;
+                            classItem['subscription_count'] -= 1;
+                            subscribers.removeWhere(
+                                    (subscriber) => subscriber['nickname'] == nickname);
+                          });
+                        } else {
+                          // 구독
+                          await FirebaseFirestore.instance
+                              .collection('classes')
+                              .doc(classItem['id'])
+                              .update({
+                            'subscription_count': FieldValue.increment(1),
+                            'subscribers': FieldValue.arrayUnion([
+                              {'nickname': nickname, 'messenger_id': messengerId}
+                            ]),
+                          });
+                          setState(() {
+                            isSubscribed = true;
+                            classItem['subscription_count'] += 1;
+                            subscribers.add({'nickname': nickname, 'messenger_id': messengerId});
+                          });
+                        }
                       },
-                      child: const Text('클래스 삭제하기'),
+                      child: Text(isSubscribed ? '구독 취소' : '구독하기'),
                     ),
-                ],
+                    const SizedBox(height: 10),
+                    if (currentUserName != null && classItem['author'] == currentUserName)
+                      ElevatedButton(
+                        onPressed: () async {
+                          await FirebaseFirestore.instance
+                              .collection('classes')
+                              .doc(classItem['id'])
+                              .delete();
+                          Navigator.pop(context);
+                          _loadClasses(); // 클래스 목록 새로고침
+                        },
+                        child: const Text('클래스 삭제하기'),
+                      ),
+                  ],
+                ),
               ),
-            ),
-          );
-        },
-      );
-    },
-  );
-}
+            );
+          },
+        );
+      },
+    );
+  }
+
 
 
 
@@ -226,8 +264,8 @@ class _CommunityAppState extends State<CommunityApp> {
                   return ListTile(
                     leading: filteredClasses[index]['profile_image'] != null
                         ? CircleAvatar(
-                            backgroundImage: NetworkImage(filteredClasses[index]['profile_image']),
-                          )
+                      backgroundImage: NetworkImage(filteredClasses[index]['profile_image']),
+                    )
                         : CircleAvatar(child: Text('기본')), // 프로필 아이콘
                     title: Text(filteredClasses[index]['title']!), // 클래스 제목 표시
                     subtitle: Row(
