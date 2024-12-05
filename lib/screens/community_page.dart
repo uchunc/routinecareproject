@@ -46,6 +46,7 @@ class _CommunityAppState extends State<CommunityApp> {
           'profile_image': doc['profile_image'],
           'bio' : doc['bio'],
           'subscription_count' : doc['subscription_count'],
+          'career': doc['career'],
         };
       }).toList();
     });
@@ -79,7 +80,7 @@ class _CommunityAppState extends State<CommunityApp> {
                             ? NetworkImage(classItem['profile_image'])
                             : const AssetImage('assets/default_profile.png') as ImageProvider,
                       ),
-                      const SizedBox(width: 16),
+                      const SizedBox(width: 30),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -89,7 +90,12 @@ class _CommunityAppState extends State<CommunityApp> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '본인 소개: ${classItem['bio'] ?? '소개가 없습니다.'}',
+                            '소개: ${classItem['bio'] ?? '소개가 없습니다.'}',
+                            style: const TextStyle(color: Colors.grey),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '경력: ${classItem['career'] ?? '경력이 없습니다.'}',
                             style: const TextStyle(color: Colors.grey),
                           ),
                         ],

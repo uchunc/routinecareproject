@@ -44,6 +44,7 @@ class CreateClassPage extends StatelessWidget {
                   String userName = '계정 없음'; // 기본값
                   String? userProfileImageUrl = '프로필 없음';
                   String userBio = '본인 소개 없음';
+                  String userCareer = '경력 없음';
 
                   if (user != null) {
                     // Firestore에서 사용자 닉네임 가져오기
@@ -52,6 +53,7 @@ class CreateClassPage extends StatelessWidget {
                       userName = userDoc['닉네임'] ?? '계정 없음'; // 닉네임이 없을 경우 기본값 사용
                       userProfileImageUrl = userDoc['프로필 사진'] ?? '프로필 없음'; // 프로필 이미지 URL 가져오기
                       userBio = userDoc['본인 소개'] ?? '본인 소개 없음';
+                      userCareer = userDoc['운동 경력'] ?? '경력 없음';
                       // 필요에 따라 userProfileImageUrl을 사용
                     }
                   }
@@ -64,6 +66,7 @@ class CreateClassPage extends StatelessWidget {
                     'profile_image' : userProfileImageUrl,
                     'bio' : userBio,
                     'subscription_count' : 0,
+                    'career' : userCareer,
                   });
                   onClassCreated(classNameController.text, classContentController.text);
                   Navigator.pop(context); // 페이지 닫기
