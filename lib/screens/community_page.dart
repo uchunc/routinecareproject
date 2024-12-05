@@ -61,7 +61,10 @@ class _CommunityAppState extends State<CommunityApp> {
 
     final nickname = userDoc['닉네임'];
     final messengerId = userDoc['메신저'];
-    final List<dynamic> subscribers = classItem['subscribers'] ?? [];
+
+    final updatedClassDoc = await FirebaseFirestore.instance.collection('classes').doc(classItem['id']).get();
+    final updatedClassItem = updatedClassDoc.data();
+    final List<dynamic> subscribers = updatedClassItem?['subscribers'] ?? [];
     bool isSubscribed = subscribers.any((subscriber) => subscriber['nickname'] == nickname);
 
     showDialog(
@@ -84,8 +87,8 @@ class _CommunityAppState extends State<CommunityApp> {
                       children: [
                         CircleAvatar(
                           radius: 30,
-                          backgroundImage: classItem['profile_image'] != null
-                              ? NetworkImage(classItem['profile_image'])
+                          backgroundImage: updatedClassItem?['profile_image'] != null
+                              ? NetworkImage(updatedClassItem!['profile_image'])
                               : const AssetImage('assets/default_profile.png') as ImageProvider,
                         ),
                         const SizedBox(width: 30),
@@ -93,17 +96,17 @@ class _CommunityAppState extends State<CommunityApp> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              classItem['author'],
+                              updatedClassItem?['author'] ?? '작성자 미상',
                               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              '메신저: ${classItem['bio'] ?? '소개가 없습니다.'}',
+                              '메신저: ${updatedClassItem?['bio'] ?? '소개가 없습니다.'}',
                               style: const TextStyle(color: Colors.grey),
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              '경력: ${classItem['career'] ?? '경력확인불가.'}',
+                              '경력: ${updatedClassItem?['career'] ?? '경력확인불가.'}',
                               style: const TextStyle(color: Colors.grey),
                             ),
                           ],
@@ -115,20 +118,20 @@ class _CommunityAppState extends State<CommunityApp> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          classItem['title'],
+                          updatedClassItem?['title'] ?? '제목없음',
                           style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                         ),
                         Text(
-                          '구독: ${classItem['subscription_count']}',
+                          '구독: ${updatedClassItem?['subscription_count'] ?? 0}',
                           style: const TextStyle(fontSize: 16, color: Colors.grey),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 10),
-                    Text('${classItem['content']}'),
+                    const SizedBox(height: 30),
+                    Text('${updatedClassItem?['content'] ?? '내용 없음'}'),
                     const Spacer(),
                     // 구독자 목록 표시
-                    if (currentUserName != null && classItem['author'] == currentUserName)
+                    if (currentUserName != null && updatedClassItem?['author'] == currentUserName)
                       Expanded(
                         child: ListView.builder(
                           itemCount: subscribers.length,
@@ -181,12 +184,12 @@ class _CommunityAppState extends State<CommunityApp> {
                       child: Text(isSubscribed ? '구독 취소' : '구독하기'),
                     ),
                     const SizedBox(height: 10),
-                    if (currentUserName != null && classItem['author'] == currentUserName)
+                    if (currentUserName != null && updatedClassItem?['author'] == currentUserName)
                       ElevatedButton(
                         onPressed: () async {
                           await FirebaseFirestore.instance
                               .collection('classes')
-                              .doc(classItem['id'])
+                              .doc(updatedClassItem!['id'])
                               .delete();
                           Navigator.pop(context);
                           _loadClasses(); // 클래스 목록 새로고침
