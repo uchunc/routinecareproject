@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class CreateClassPage extends StatelessWidget {
   final Function(String, String) onClassCreated; // 제목과 내용을 전달할 함수
@@ -33,8 +35,24 @@ class CreateClassPage extends StatelessWidget {
             const Spacer(),
             Center(
               child: TextButton(
-                onPressed: () {
-                  // 클래스 생성 시 호출
+                onPressed: () async {
+                  final user = FirebaseAuth.instance.currentUser;
+                  String userName = '계정 없음'; // 기본값
+
+                  if (user != null) {
+                    // Firestore에서 사용자 닉네임 가져오기
+                    final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+                    if (userDoc.exists) {
+                      userName = userDoc['닉네임'] ?? '계정 없음'; // 닉네임이 없을 경우 기본값 사용
+                    }
+                  }
+
+                  // Firestore에 클래스 저장
+                  await FirebaseFirestore.instance.collection('classes').add({
+                    'title': classNameController.text,
+                    'content': classContentController.text,
+                    'author': userName, // 로그인한 사용자의 닉네임 저장
+                  });
                   onClassCreated(classNameController.text, classContentController.text);
                   Navigator.pop(context); // 페이지 닫기
                 },
