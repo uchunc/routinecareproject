@@ -151,7 +151,9 @@ class _CommunityAppState extends State<CommunityApp> {
                 itemCount: filteredClasses.length,
                 itemBuilder: (context, index) {
                   return ListTile(
-                    leading: CircleAvatar(child: Text('P')), // 프로필 아이콘
+                    leading: CircleAvatar(
+                      backgroundImage: NetworkImage(classItem['프로필 사진']), // 생성자 계정의 프로필 이미지 불러오기
+                    ),
                     title: Text(filteredClasses[index]['title']!), // 클래스 제목 표시
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
