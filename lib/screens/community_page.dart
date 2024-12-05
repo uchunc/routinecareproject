@@ -101,6 +101,11 @@ class _CommunityAppState extends State<CommunityApp> {
                               '메신저: ${classItem['bio'] ?? '소개가 없습니다.'}',
                               style: const TextStyle(color: Colors.grey),
                             ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '경력: ${classItem['career'] ?? '경력확인불가.'}',
+                              style: const TextStyle(color: Colors.grey),
+                            ),
                           ],
                         ),
                       ],
