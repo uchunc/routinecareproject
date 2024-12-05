@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'create_class_page.dart'; // 새로운 페이지 임포트
 
 class CommunityApp extends StatefulWidget {
@@ -12,7 +14,31 @@ class CommunityApp extends StatefulWidget {
 
 class _CommunityAppState extends State<CommunityApp> {
   List<Map<String, dynamic>> classes = []; // 생성된 클래스 목록 (제목과 내용)
+  List<Map<String, dynamic>> classes = []; // 생성된 클래스 목록 (제목과 내용)
   String searchQuery = ''; // 검색어 저장
+  String? currentUserName; // 현재 로그인한 사용자의 닉네임
+
+  @override
+  void initState() {
+    super.initState();
+    _loadClasses(); // 클래스 불러오기
+    _loadCurrentUserName(); // 현재 사용자 닉네임 불러오기
+  }
+
+  Future<void> _loadCurrentUserName() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      if (userDoc.exists) {
+        setState(() {
+          currentUserName = userDoc['닉네임']; // 현재 사용자 닉네임 저장
+        });
+      }
+    }
+  }
+
+  Future<void> _loadClasses() async {
+    final classDocs = await FirebaseFirestore.instance.collection('classes').get();
   String? currentUserName; // 현재 로그인한 사용자의 닉네임
 
   @override
