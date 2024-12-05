@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'create_class_page.dart'; // 새로운 페이지 임포트
@@ -100,10 +101,22 @@ class _CommunityAppState extends State<CommunityApp> {
                               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                             ),
                             const SizedBox(height: 4),
-                            Text(
-                              '메신저: ${updatedClassItem?['bio'] ?? '소개가 없습니다.'}',
-                              style: const TextStyle(color: Colors.grey),
+                            GestureDetector(
+                              onTap: () {
+                                //메신저 ID 클립보드 복사
+                                final messengerID = updatedClassItem?['bio'] ?? '메신저 ID 없음';
+                                Clipboard.setData(ClipboardData(text: messengerID)).then((_) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('메신저 ID가 복사되었습니다: $messengerID')),
+                                  );
+                                });
+                              },
+                              child: Text(
+                                '메신저: ${updatedClassItem?['bio'] ?? '소개가 없습니다.'}',
+                                style: const TextStyle(color: Colors.grey, decoration: TextDecoration.underline),
+                              ),
                             ),
+                            
                             const SizedBox(height: 4),
                             Text(
                               '경력: ${updatedClassItem?['career'] ?? '경력확인불가.'}',
