@@ -36,7 +36,7 @@ dependencies:
   cloud_firestore: ^5.4.0 # firebase_core와 호환되는 최신 버전
   firebase_storage: ^12.3.6 # firebase_core와 호환되는 최신 버전
   google_sign_in: ^6.1.0 # 최신 버전
-
+  image: ^3.0.1
 
 
   # The following adds the Cupertino Icons font to your application.

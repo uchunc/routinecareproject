@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart'; // 이미지 선택을 위한 패키지
 import '../widgets/calendar.dart';
 import '../widgets/journal_entry.dart';
 import '../helpers/database_helper.dart';
@@ -17,6 +18,10 @@ class _MainPageState extends State<MainPage>
   DateTime selectedDate = DateTime.now();
   Map<String, List<Map<String, dynamic>>> journalEntries = {}; // 날짜별 일지 저장
   late TabController controller;
+
+  String formatDate(DateTime date) {
+    return "${date.year}-${date.month}-${date.day}";
+  }
 
   @override
   void initState() {
@@ -118,65 +123,83 @@ class _MainPageState extends State<MainPage>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: buildAppBar(),
-      body: TabBarView(
-        controller: controller,
+      body: Column(
         children: [
-          // Tab 1: 커뮤니티
-          CommunityApp(),
-          // Tab 2: 홈
-          Center(
-            child: Column(
+          // TabBarView는 Column 내에 배치
+          Expanded(
+            child: TabBarView(
+              controller: controller,
               children: [
-                Calendar(
-                  date: selectedDate,
-                  onDateSelected: (DateTime date) {
-                    setState(() {
-                      selectedDate = date;
-                    });
-                  },
-                  journalEntries: journalEntries,
-                ),
-                Expanded(
-                  child: JournalViewer(
-                    selectedDate: selectedDate,
-                    journalEntries: journalEntries,
-                    onEntryChanged: (updatedEntries) async {
-                      final dbHelper = DatabaseHelper();
-                      final dateKey = formatDate(selectedDate);
-
-                      // 기존 데이터를 SQLite에 업데이트
-                      for (final entry in updatedEntries) {
-                        print(
-                            "Content: ${entry['content']}, ImagePath: ${entry['imagePath']}");
-                        await dbHelper.insertJournal(
-                          dateKey,
-                          entry['content'],
-                          entry['imagePath'] ?? '',
-                        );
-                      }
-
-                      // 데이터를 다시 로드
-                      await _loadEntriesForMonth();
-                    },
+                // Tab 1: 커뮤니티
+                CommunityApp(),
+                // Tab 2: 홈
+                Center(
+                  child: Column(
+                    children: [
+                      Calendar(
+                        date: selectedDate,
+                        onDateSelected: (DateTime date) {
+                          setState(() {
+                            selectedDate = date;
+                          });
+                        },
+                        journalEntries: journalEntries,
+                      ),
+                      // 바를 Calendar 아래로 배치
+                      Container(
+                        width: double.infinity,
+                        height: 53,
+                        color: Colors.black12, // 바의 배경색
+                        child: Align(
+                          alignment: Alignment.centerRight,
+                          child: Padding(
+                            padding: const EdgeInsets.only(right: 15),
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: JournalViewer(
+                          selectedDate: selectedDate,
+                          journalEntries: journalEntries,
+                          onEntryChanged: (updatedJournalEntries) {
+                            setState(() {
+                              journalEntries =
+                                  updatedJournalEntries; // 전체 데이터 업데이트
+                            });
+                          },
+                        ),
+                      ),
+                    ],
                   ),
                 ),
+                // Tab 3: 프로필
+                ProfileApp(),
               ],
             ),
           ),
-          // Tab 3: 프로필
-          ProfileApp(),
         ],
       ),
-      bottomNavigationBar: TabBar(
-        controller: controller,
-        tabs: const <Tab>[
-          Tab(icon: Icon(Icons.group), text: '커뮤니티'),
-          Tab(icon: Icon(Icons.home), text: '홈'),
-          Tab(icon: Icon(Icons.person), text: '프로필'),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: controller.index,
+        onTap: (index) {
+          setState(() {
+            controller.index = index;
+          });
+        },
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.group),
+            label: '커뮤니티',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: '홈',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: '프로필',
+          ),
         ],
-        labelColor: Colors.deepPurple,
-        unselectedLabelColor: Colors.grey,
-        indicatorColor: Colors.deepPurple,
       ),
     );
   }

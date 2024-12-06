@@ -85,7 +85,7 @@ class _CalendarState extends State<Calendar> {
       return Colors.blue;
     } else {
       String formattedDate =
-          "${currentDate.year}-${currentDate.month}-${currentDate.day}";
+          "${currentDate.year}-${currentDate.month.toString().padLeft(2, '0')}-${currentDate.day.toString().padLeft(2, '0')}";
       if (widget.journalEntries.containsKey(formattedDate) &&
           widget.journalEntries[formattedDate]!.isNotEmpty) {
         return Colors.green;
