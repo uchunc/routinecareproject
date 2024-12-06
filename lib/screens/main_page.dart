@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../widgets/calendar.dart';
 import '../widgets/journal_entry.dart';
+import '../helpers/database_helper.dart';
 import 'community_page.dart'; // 커뮤니티 페이지
 import 'profile_page.dart'; // 프로필 페이지
 
@@ -14,12 +15,8 @@ class MainPage extends StatefulWidget {
 class _MainPageState extends State<MainPage>
     with SingleTickerProviderStateMixin {
   DateTime selectedDate = DateTime.now();
-  Map<String, List<String>> journalEntries = {}; // 날짜별 일지 저장
+  Map<String, List<Map<String, dynamic>>> journalEntries = {}; // 날짜별 일지 저장
   late TabController controller;
-
-  String formatDate(DateTime date) {
-    return "${date.year}-${date.month}-${date.day}";
-  }
 
   @override
   void initState() {
@@ -28,12 +25,47 @@ class _MainPageState extends State<MainPage>
     controller.addListener(() {
       setState(() {}); // 탭 변경 시 상태 업데이트
     });
+    _loadEntriesForMonth(); // 초기 데이터 로드
   }
 
   @override
   void dispose() {
     controller.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadEntriesForDay() async {
+    final dbHelper = DatabaseHelper();
+    String dateKey =
+        "${selectedDate.year}-${selectedDate.month}-${selectedDate.day}"; // 정확한 날짜 형식
+    final entries = await dbHelper.getJournalsByDate(dateKey);
+    setState(() {
+      journalEntries[dateKey] = entries; // key가 날짜로 저장됨
+    });
+  }
+
+  Future<void> _loadEntriesForMonth() async {
+    // monthKey를 yyyy-mm 형식으로 생성
+    String monthKey =
+        "${selectedDate.year}-${selectedDate.month.toString().padLeft(2, '0')}";
+
+    // 이미 journalEntries에 저장된 데이터에서 해당 월의 데이터를 필터링
+    List<Map<String, dynamic>> entriesForMonth = [];
+
+    journalEntries.forEach((key, entries) {
+      if (key.startsWith(monthKey)) {
+        entriesForMonth.addAll(entries); // 해당 월의 모든 데이터를 추가
+      }
+    });
+
+    // 월별 데이터로 journalEntries 업데이트
+    setState(() {
+      journalEntries[monthKey] = entriesForMonth;
+    });
+  }
+
+  String formatDate(DateTime date) {
+    return "${date.year}-${date.month}-${date.day}";
   }
 
   AppBar buildAppBar() {
@@ -53,6 +85,7 @@ class _MainPageState extends State<MainPage>
                     selectedDate.year,
                     selectedDate.month - 1,
                   );
+                  _loadEntriesForMonth(); // 이전 달의 데이터를 로드
                 });
               },
             ),
@@ -65,6 +98,7 @@ class _MainPageState extends State<MainPage>
                     selectedDate.year,
                     selectedDate.month + 1,
                   );
+                  _loadEntriesForMonth(); // 다음 달의 데이터를 로드
                 });
               },
             ),
@@ -88,7 +122,7 @@ class _MainPageState extends State<MainPage>
         controller: controller,
         children: [
           // Tab 1: 커뮤니티
-          CommunityApp(), // 커뮤니티 페이지 불러오기
+          CommunityApp(),
           // Tab 2: 홈
           Center(
             child: Column(
@@ -106,20 +140,31 @@ class _MainPageState extends State<MainPage>
                   child: JournalViewer(
                     selectedDate: selectedDate,
                     journalEntries: journalEntries,
-                    onEntryChanged: (updatedEntries) {
-                      setState(() {
-                        journalEntries[formatDate(selectedDate)] =
-                            updatedEntries;
-                      });
+                    onEntryChanged: (updatedEntries) async {
+                      final dbHelper = DatabaseHelper();
+                      final dateKey = formatDate(selectedDate);
+
+                      // 기존 데이터를 SQLite에 업데이트
+                      for (final entry in updatedEntries) {
+                        print(
+                            "Content: ${entry['content']}, ImagePath: ${entry['imagePath']}");
+                        await dbHelper.insertJournal(
+                          dateKey,
+                          entry['content'],
+                          entry['imagePath'] ?? '',
+                        );
+                      }
+
+                      // 데이터를 다시 로드
+                      await _loadEntriesForMonth();
                     },
                   ),
                 ),
               ],
             ),
           ),
-
           // Tab 3: 프로필
-          ProfileApp(), // 프로필 페이지 불러오기
+          ProfileApp(),
         ],
       ),
       bottomNavigationBar: TabBar(

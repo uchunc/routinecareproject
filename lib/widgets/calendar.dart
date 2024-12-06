@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 class Calendar extends StatefulWidget {
   final DateTime date;
   final Function(DateTime) onDateSelected;
-  final Map<String, List<String>> journalEntries;
+  final Map<String, List<Map<String, dynamic>>> journalEntries;
 
   const Calendar({
     super.key,
@@ -19,14 +19,14 @@ class Calendar extends StatefulWidget {
 class _CalendarState extends State<Calendar> {
   late ScrollController _scrollController;
   late int selectedDayIndex;
-  late DateTime selectedDate; // 선택된 날짜 상태
+  late DateTime selectedDate;
 
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController();
-    selectedDate = widget.date; // 초기 선택 날짜를 오늘 날짜로 설정
-    selectedDayIndex = widget.date.day - 1; // 오늘 날짜의 인덱스를 계산
+    selectedDate = widget.date;
+    selectedDayIndex = widget.date.day - 1;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToSelectedDate();
     });
@@ -39,18 +39,17 @@ class _CalendarState extends State<Calendar> {
   }
 
   void _scrollToSelectedDate() {
-    double itemWidth = 56.0; // CircleAvatar의 너비
+    double itemWidth = 56.0;
     double position = itemWidth * selectedDayIndex -
         MediaQuery.of(context).size.width / 2 +
         itemWidth / 2;
 
-    // 스크롤이 중앙에 오지 않으면 가장 끝으로 스크롤
     double maxScroll = _scrollController.position.maxScrollExtent;
     double minScroll = _scrollController.position.minScrollExtent;
     if (position < minScroll) {
-      position = minScroll; // 왼쪽 끝으로 스크롤
+      position = minScroll;
     } else if (position > maxScroll) {
-      position = maxScroll; // 오른쪽 끝으로 스크롤
+      position = maxScroll;
     }
 
     _scrollController.animateTo(
@@ -83,15 +82,15 @@ class _CalendarState extends State<Calendar> {
 
   Color getCircleColor(DateTime currentDate) {
     if (isSameDate(currentDate, selectedDate)) {
-      return Colors.blue; // 선택된 날짜
+      return Colors.blue;
     } else {
       String formattedDate =
           "${currentDate.year}-${currentDate.month}-${currentDate.day}";
       if (widget.journalEntries.containsKey(formattedDate) &&
           widget.journalEntries[formattedDate]!.isNotEmpty) {
-        return Colors.green; // 일지가 있는 날짜
+        return Colors.green;
       } else {
-        return Colors.grey; // 일지가 없는 날짜
+        return Colors.grey;
       }
     }
   }
@@ -119,11 +118,11 @@ class _CalendarState extends State<Calendar> {
           return GestureDetector(
             onTap: () {
               setState(() {
-                selectedDate = currentDate; // 선택된 날짜 업데이트
-                selectedDayIndex = index; // 선택된 날짜 인덱스 업데이트
+                selectedDate = currentDate;
+                selectedDayIndex = index;
               });
-              widget.onDateSelected(currentDate); // 날짜 선택 콜백 호출
-              _scrollToSelectedDate(); // 선택된 날짜로 스크롤 이동
+              widget.onDateSelected(currentDate);
+              _scrollToSelectedDate();
             },
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8.0),
