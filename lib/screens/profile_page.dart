@@ -41,7 +41,12 @@ class _ProfileAppState extends State<ProfileApp> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return WillPopScope(
+        onWillPop: () async {
+      Navigator.popAndPushNamed(context, '/main_page'); // 홈 페이지로 이동
+      return false; // 기본 뒤로가기 동작 방지
+    },
+    child: Scaffold(
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -198,6 +203,7 @@ class _ProfileAppState extends State<ProfileApp> {
           ],
         ),
       ),
+    )
     );
   }
 }

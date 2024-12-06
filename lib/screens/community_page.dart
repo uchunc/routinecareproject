@@ -130,9 +130,13 @@ class _CommunityAppState extends State<CommunityApp> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          updatedClassItem?['title'] ?? '제목없음',
-                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                        Flexible(
+                          child: Text(
+                            updatedClassItem?['title'] ?? '제목없음',
+                            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                            softWrap: true, // 텍스트가 줄바꿈될 수 있도록 설정
+                            overflow: TextOverflow.visible, // 텍스트 오버플로우 방지
+                          ),
                         ),
                         Text(
                           '구독: ${updatedClassItem?['subscription_count'] ?? 0}',
