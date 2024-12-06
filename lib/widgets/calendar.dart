@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 class Calendar extends StatefulWidget {
   final DateTime date;
   final Function(DateTime) onDateSelected;
-  final Map<String, List<String>> journalEntries;
+  final Map<String, List<Map<String, dynamic>>> journalEntries;
 
   const Calendar({
     super.key,
@@ -25,7 +25,7 @@ class _CalendarState extends State<Calendar> {
   void initState() {
     super.initState();
     _scrollController = ScrollController();
-    selectedDate = widget.date; // 초기 선택 날짜를 오늘 날짜로 설정
+    selectedDate = widget.date; // 초기 선택 날짜를 설정
     selectedDayIndex = widget.date.day - 1; // 오늘 날짜의 인덱스를 계산
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToSelectedDate();
@@ -82,17 +82,16 @@ class _CalendarState extends State<Calendar> {
   }
 
   Color getCircleColor(DateTime currentDate) {
+    String formattedDate =
+        "${currentDate.year}-${currentDate.month.toString().padLeft(2, '0')}-${currentDate.day.toString().padLeft(2, '0')}";
+
     if (isSameDate(currentDate, selectedDate)) {
-      return Colors.blue; // 선택된 날짜
+      return Colors.blue; // 선택된 날짜 색상
+    } else if (widget.journalEntries.containsKey(formattedDate) &&
+        widget.journalEntries[formattedDate]!.isNotEmpty) {
+      return Colors.green; // 기록이 있는 날짜 색상
     } else {
-      String formattedDate =
-          "${currentDate.year}-${currentDate.month.toString().padLeft(2, '0')}-${currentDate.day.toString().padLeft(2, '0')}";
-      if (widget.journalEntries.containsKey(formattedDate) &&
-          widget.journalEntries[formattedDate]!.isNotEmpty) {
-        return Colors.green; // 일지가 있는 날짜
-      } else {
-        return Colors.grey; // 일지가 없는 날짜
-      }
+      return Colors.grey; // 기본 색상
     }
   }
 
@@ -133,9 +132,19 @@ class _CalendarState extends State<Calendar> {
                   CircleAvatar(
                     radius: 20.0,
                     backgroundColor: getCircleColor(currentDate),
-                    child: Text('${currentDate.day}'),
+                    child: Text(
+                      '${currentDate.day}',
+                      style: TextStyle(
+                        color: isSameDate(currentDate, selectedDate)
+                            ? Colors.white // 선택된 날짜의 텍스트 색상
+                            : Colors.black, // 기본 텍스트 색상
+                      ),
+                    ),
                   ),
-                  Text(getWeekdayString(currentDate.weekday)),
+                  Text(
+                    getWeekdayString(currentDate.weekday),
+                    style: TextStyle(fontSize: 12),
+                  ),
                 ],
               ),
             ),

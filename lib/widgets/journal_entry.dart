@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:routinecareproject/database_helper.dart';
 import 'dart:io';
 import 'dart:ui';
 
+import 'package:routinecareproject/models/journal_entry.dart';
+
+// ignore: must_be_immutable
 class JournalViewer extends StatefulWidget {
   final DateTime selectedDate;
-  final Map<String, List<String>> journalEntries;
+  Map<String, List<Map<String, dynamic>>> journalEntries;
   final ValueChanged<Map<String, List<String>>> onEntryChanged;
 
-  const JournalViewer({
+  JournalViewer({
     super.key,
     required this.selectedDate,
     required this.journalEntries,
@@ -19,8 +23,9 @@ class JournalViewer extends StatefulWidget {
   _JournalViewerState createState() => _JournalViewerState();
 }
 
-class _JournalViewerState extends State<JournalViewer> with SingleTickerProviderStateMixin {
-  late List<MapEntry<String, String>> allEntries; // 날짜와 이미지 경로를 함께 저장
+class _JournalViewerState extends State<JournalViewer>
+    with SingleTickerProviderStateMixin {
+  List<MapEntry<String, String>> allEntries = []; // 날짜와 이미지 경로를 함께 저장
   final ImagePicker _picker = ImagePicker();
   late AnimationController _controller;
   late Animation<double> _animation;
@@ -32,7 +37,7 @@ class _JournalViewerState extends State<JournalViewer> with SingleTickerProvider
   @override
   void initState() {
     super.initState();
-    _loadAllEntries();
+    _loadJournalEntriesFromDatabase();
 
     // FocusNode 초기화
     _textFieldFocusNode = FocusNode();
@@ -42,7 +47,8 @@ class _JournalViewerState extends State<JournalViewer> with SingleTickerProvider
       duration: Duration(milliseconds: 300),
       vsync: this,
     );
-    _animation = Tween<double>(begin: 0.0, end: 0.3).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+    _animation = Tween<double>(begin: 0.0, end: 0.3)
+        .animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
 
     _textFieldFocusNode.addListener(() {
       if (_textFieldFocusNode.hasFocus) {
@@ -54,6 +60,12 @@ class _JournalViewerState extends State<JournalViewer> with SingleTickerProvider
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _loadJournalEntriesFromDatabase(); // 페이지 이동 후 데이터 로드
+  }
+
+  @override
   void didUpdateWidget(JournalViewer oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.journalEntries != widget.journalEntries) {
@@ -62,31 +74,43 @@ class _JournalViewerState extends State<JournalViewer> with SingleTickerProvider
   }
 
   void addJournalPage() async {
-    final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+    final XFile? pickedFile =
+        await _picker.pickImage(source: ImageSource.gallery);
 
     if (pickedFile != null) {
-      setState(() {
-        // 날짜를 두 자릿수 형식으로 포맷
-        String dateKey = "${widget.selectedDate.year}-${widget.selectedDate.month.toString().padLeft(2, '0')}-${widget.selectedDate.day.toString().padLeft(2, '0')}";
+      String dateKey =
+          "${widget.selectedDate.year}-${widget.selectedDate.month.toString().padLeft(2, '0')}-${widget.selectedDate.day.toString().padLeft(2, '0')}";
 
-        // 날짜에 맞는 리스트에 이미지 경로 추가
-        widget.journalEntries.putIfAbsent(dateKey, () => []);
-        widget.journalEntries[dateKey]!.add(pickedFile.path);
+      final newEntry = JournalEntry(
+        date: dateKey,
+        imagePath: pickedFile.path,
+        text: '',
+      );
 
-        widget.onEntryChanged(widget.journalEntries);
+      await DatabaseHelper().insertJournalEntry(newEntry);
 
-        // 이미지가 추가된 후 모든 항목을 로드하고 날짜별로 정렬
-        _loadAllEntries();  // 이 메서드는 날짜별로 정렬된 이미지를 로드하고 UI를 갱신
-      });
+      // 업데이트
+      _loadJournalEntriesFromDatabase();
     }
   }
 
+  void _loadJournalEntriesFromDatabase() async {
+    final entries = await DatabaseHelper().getJournalEntries();
+    setState(() {
+      widget.journalEntries = {};
+      for (var entry in entries) {
+        widget.journalEntries.putIfAbsent(entry.date, () => []);
+        widget.journalEntries[entry.date]!.add({"path": entry.imagePath});
+      }
+      _loadAllEntries();
+    });
+  }
 
   void _loadAllEntries() {
     allEntries = [];
     widget.journalEntries.forEach((date, entries) {
-      for (var imagePath in entries) {
-        allEntries.add(MapEntry(date, imagePath));
+      for (var entry in entries) {
+        allEntries.add(MapEntry(date, entry["path"] as String));
       }
     });
 
@@ -122,10 +146,11 @@ class _JournalViewerState extends State<JournalViewer> with SingleTickerProvider
               BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                 child: Container(
-                  // color: Colors.black.withOpacity(0.5),
-                ),
+                    // color: Colors.black.withOpacity(0.5),
+                    ),
               ),
-              SingleChildScrollView(  // Column을 SingleChildScrollView로 감쌈
+              SingleChildScrollView(
+                // Column을 SingleChildScrollView로 감쌈
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -134,9 +159,10 @@ class _JournalViewerState extends State<JournalViewer> with SingleTickerProvider
                       animation: _animation,
                       builder: (context, child) {
                         return FutureBuilder<Image>(
-                          future: _loadImage(imagePath),  // 이미지 로드
+                          future: _loadImage(imagePath), // 이미지 로드
                           builder: (context, snapshot) {
-                            if (snapshot.connectionState == ConnectionState.waiting) {
+                            if (snapshot.connectionState ==
+                                ConnectionState.waiting) {
                               return CircularProgressIndicator();
                             }
 
@@ -145,23 +171,27 @@ class _JournalViewerState extends State<JournalViewer> with SingleTickerProvider
                             }
 
                             final image = snapshot.data!;
-                            final width = image.width?.toDouble() ?? 100.0; // 기본값 100.0
-                            final height = image.height?.toDouble() ?? 100.0; // 기본값 100.0
+                            final width =
+                                image.width?.toDouble() ?? 100.0; // 기본값 100.0
+                            final height =
+                                image.height?.toDouble() ?? 100.0; // 기본값 100.0
 
                             final aspectRatio = height / width;
 
                             return Container(
                               width: MediaQuery.of(context).size.width * 1,
-                              height: MediaQuery.of(context).size.width * 0.8 * aspectRatio, // 비율에 맞는 높이
+                              height: MediaQuery.of(context).size.width *
+                                  0.8 *
+                                  aspectRatio, // 비율에 맞는 높이
                               decoration: BoxDecoration(
                                 border: Border.all(
-                                  color: textColor,  // 텍스트 색상으로 테두리 색상 설정
-                                  width: 20,  // 테두리 두께
+                                  color: textColor, // 텍스트 색상으로 테두리 색상 설정
+                                  width: 20, // 테두리 두께
                                 ),
                                 // borderRadius: BorderRadius.circular(10),  // 테두리 모서리 둥글기
                               ),
                               child: FittedBox(
-                                fit: BoxFit.contain,  // 이미지를 비율에 맞게 크기를 조정
+                                fit: BoxFit.contain, // 이미지를 비율에 맞게 크기를 조정
                                 child: Image.file(
                                   File(imagePath),
                                 ),
@@ -185,7 +215,8 @@ class _JournalViewerState extends State<JournalViewer> with SingleTickerProvider
                             controller: _textController,
                             decoration: InputDecoration(
                               labelText: "일지",
-                              labelStyle: TextStyle(color: Colors.black), // 라벨 텍스트 색상
+                              labelStyle:
+                                  TextStyle(color: Colors.black), // 라벨 텍스트 색상
                               border: OutlineInputBorder(),
                             ),
                             style: TextStyle(color: Colors.black), // 텍스트 색상
@@ -194,9 +225,17 @@ class _JournalViewerState extends State<JournalViewer> with SingleTickerProvider
                           ),
                           SizedBox(height: 10),
                           ElevatedButton(
-                            onPressed: () {
-                              // 저장 로직 추가 가능
-                              Navigator.of(context).pop();
+                            onPressed: () async {
+                              final updatedText = _textController.text;
+                              // 데이터베이스에 텍스트 저장
+                              String dateKey =
+                                  "${widget.selectedDate.year}-${widget.selectedDate.month.toString().padLeft(2, '0')}-${widget.selectedDate.day.toString().padLeft(2, '0')}";
+
+                              await DatabaseHelper()
+                                  .updateJournalEntry(dateKey, updatedText);
+
+                              _loadJournalEntriesFromDatabase(); // UI 갱신
+                              Navigator.of(context).pop(); // 다이얼로그 닫기
                             },
                             child: Text("Save"),
                           ),
@@ -239,12 +278,12 @@ class _JournalViewerState extends State<JournalViewer> with SingleTickerProvider
   Widget build(BuildContext context) {
     return GridView.builder(
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,               // 3열로 배치
-        crossAxisSpacing: 0.0,           // 열 간 간격 0
-        mainAxisSpacing: 0.0,            // 행 간 간격 0
-        childAspectRatio: 1.0,           // 자식 항목의 비율을 정사각형으로 설정
+        crossAxisCount: 3, // 3열로 배치
+        crossAxisSpacing: 0.0, // 열 간 간격 0
+        mainAxisSpacing: 0.0, // 행 간 간격 0
+        childAspectRatio: 1.0, // 자식 항목의 비율을 정사각형으로 설정
       ),
-      itemCount: allEntries.length + 1, // 이미지 + 추가 버튼
+      itemCount: allEntries.isEmpty ? 1 : allEntries.length + 1, // 이미지 + 추가 버튼
       itemBuilder: (context, index) {
         if (index == allEntries.length) {
           // + 아이콘 추가

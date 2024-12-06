@@ -52,10 +52,16 @@
             <string>Editor</string>
             <key>CFBundleURLSchemes</key>
             <array>
-                 <string>com.googleusercontent.apps.410375819014-0dd724869d35d8a4d3d887</string>
+                 <string>com.googleusercontent.apps.410375819014-5tv371sd0ib3h84ka1q1movmmv7e6a17</string>
             </array>
         </dict>
     </array>
+	<key>NSCameraUsageDescription</key>
+	<string>카메라 사용을 위해 권한이 필요합니다.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>사진 라이브러리에 접근하기 위한 권한이 필요합니다.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>사진을 추가하기 위한 권한이 필요합니다.</string>
 
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>

@@ -22,6 +22,14 @@
           }
         },
         {
+          "client_id": "410375819014-6dds04oiv3hivacumrtlc3c5eaago8lq.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.teamproject.workoutzzang",
+            "certificate_hash": "0c3c6447cb8c554d529695bdbbd93bce037cc9a7"
+          }
+        },
+        {
           "client_id": "410375819014-hta1f4q5p49jl6rgfr42t7ks98el24jk.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
@@ -47,10 +55,10 @@
               "client_type": 3
             },
             {
-              "client_id": "410375819014-6nfeit0r1q91mklka3n998mg9q66922e.apps.googleusercontent.com",
+              "client_id": "410375819014-5tv371sd0ib3h84ka1q1movmmv7e6a17.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "com.teamproject.workoutzzang"
+                "bundle_id": "com.example.routinecareproject"
               }
             }
           ]

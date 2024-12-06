@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart'; // 이미지 선택을 위한 패키지
 import '../widgets/calendar.dart';
 import '../widgets/journal_entry.dart';
 import 'community_page.dart'; // 커뮤니티 페이지
@@ -12,15 +11,15 @@ class MainPage extends StatefulWidget {
   _MainPageState createState() => _MainPageState();
 }
 
-class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin {
+class _MainPageState extends State<MainPage>
+    with SingleTickerProviderStateMixin {
   DateTime selectedDate = DateTime.now();
-  Map<String, List<String>> journalEntries = {}; // 날짜별 일지 저장
+  Map<String, List<Map<String, dynamic>>> journalEntries = {}; // 날짜별 일지 저장
   late TabController controller;
 
   String formatDate(DateTime date) {
     return "${date.year}-${date.month}-${date.day}";
   }
-
 
   @override
   void initState() {
@@ -123,7 +122,9 @@ class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin
                           journalEntries: journalEntries,
                           onEntryChanged: (updatedJournalEntries) {
                             setState(() {
-                              journalEntries = updatedJournalEntries; // 전체 데이터 업데이트
+                              journalEntries = updatedJournalEntries.cast<
+                                  String,
+                                  List<Map<String, dynamic>>>(); // 전체 데이터 업데이트
                             });
                           },
                         ),
@@ -162,5 +163,4 @@ class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin
       ),
     );
   }
-
 }
