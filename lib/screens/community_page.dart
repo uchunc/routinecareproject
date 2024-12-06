@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'create_class_page.dart'; // 새로운 페이지 임포트
@@ -61,7 +62,10 @@ class _CommunityAppState extends State<CommunityApp> {
 
     final nickname = userDoc['닉네임'];
     final messengerId = userDoc['메신저'];
-    final List<dynamic> subscribers = classItem['subscribers'] ?? [];
+
+    final updatedClassDoc = await FirebaseFirestore.instance.collection('classes').doc(classItem['id']).get();
+    final updatedClassItem = updatedClassDoc.data();
+    final List<dynamic> subscribers = updatedClassItem?['subscribers'] ?? [];
     bool isSubscribed = subscribers.any((subscriber) => subscriber['nickname'] == nickname);
 
     showDialog(
@@ -84,8 +88,8 @@ class _CommunityAppState extends State<CommunityApp> {
                       children: [
                         CircleAvatar(
                           radius: 30,
-                          backgroundImage: classItem['profile_image'] != null
-                              ? NetworkImage(classItem['profile_image'])
+                          backgroundImage: updatedClassItem?['profile_image'] != null
+                              ? NetworkImage(updatedClassItem!['profile_image'])
                               : const AssetImage('assets/default_profile.png') as ImageProvider,
                         ),
                         const SizedBox(width: 30),
@@ -93,12 +97,29 @@ class _CommunityAppState extends State<CommunityApp> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              classItem['author'],
+                              updatedClassItem?['author'] ?? '작성자 미상',
                               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                             ),
                             const SizedBox(height: 4),
+                            GestureDetector(
+                              onTap: () {
+                                //메신저 ID 클립보드 복사
+                                final messengerID = updatedClassItem?['bio'] ?? '메신저 ID 없음';
+                                Clipboard.setData(ClipboardData(text: messengerID)).then((_) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('메신저 ID가 복사되었습니다: $messengerID')),
+                                  );
+                                });
+                              },
+                              child: Text(
+                                '메신저: ${updatedClassItem?['bio'] ?? '소개가 없습니다.'}',
+                                style: const TextStyle(color: Colors.grey, decoration: TextDecoration.underline),
+                              ),
+                            ),
+                            
+                            const SizedBox(height: 4),
                             Text(
-                              '소개: ${classItem['bio'] ?? '소개가 없습니다.'}',
+                              '경력: ${updatedClassItem?['career'] ?? '경력확인불가.'}',
                               style: const TextStyle(color: Colors.grey),
                             ),
                           ],
@@ -109,21 +130,25 @@ class _CommunityAppState extends State<CommunityApp> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          classItem['title'],
-                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                        Flexible(
+                          child: Text(
+                            updatedClassItem?['title'] ?? '제목없음',
+                            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                            softWrap: true, // 텍스트가 줄바꿈될 수 있도록 설정
+                            overflow: TextOverflow.visible, // 텍스트 오버플로우 방지
+                          ),
                         ),
                         Text(
-                          '구독: ${classItem['subscription_count']}',
+                          '구독: ${updatedClassItem?['subscription_count'] ?? 0}',
                           style: const TextStyle(fontSize: 16, color: Colors.grey),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 10),
-                    Text('${classItem['content']}'),
+                    const SizedBox(height: 30),
+                    Text('${updatedClassItem?['content'] ?? '내용 없음'}'),
                     const Spacer(),
                     // 구독자 목록 표시
-                    if (currentUserName != null && classItem['author'] == currentUserName)
+                    if (currentUserName != null && updatedClassItem?['author'] == currentUserName)
                       Expanded(
                         child: ListView.builder(
                           itemCount: subscribers.length,
@@ -176,12 +201,12 @@ class _CommunityAppState extends State<CommunityApp> {
                       child: Text(isSubscribed ? '구독 취소' : '구독하기'),
                     ),
                     const SizedBox(height: 10),
-                    if (currentUserName != null && classItem['author'] == currentUserName)
+                    if (currentUserName != null && updatedClassItem?['author'] == currentUserName)
                       ElevatedButton(
                         onPressed: () async {
                           await FirebaseFirestore.instance
                               .collection('classes')
-                              .doc(classItem['id'])
+                              .doc(updatedClassItem!['id'])
                               .delete();
                           Navigator.pop(context);
                           _loadClasses(); // 클래스 목록 새로고침

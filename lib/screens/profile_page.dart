@@ -33,7 +33,7 @@ class _ProfileAppState extends State<ProfileApp> {
         setState(() {
           _nickname = userDoc['닉네임'] ?? "닉네임을 설정하세요";
           _profileImageUrl = userDoc['프로필 사진'] ?? "";
-          _bio = userDoc['본인 소개'] ?? "소개를 추가하세요"; // 본인 소개 데이터 로드
+          _bio = userDoc['메신저'] ?? "소개를 추가하세요"; // 본인 소개 데이터 로드
         });
       }
     }
@@ -41,7 +41,12 @@ class _ProfileAppState extends State<ProfileApp> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return WillPopScope(
+        onWillPop: () async {
+      Navigator.popAndPushNamed(context, '/main_page'); // 홈 페이지로 이동
+      return false; // 기본 뒤로가기 동작 방지
+    },
+    child: Scaffold(
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -198,6 +203,7 @@ class _ProfileAppState extends State<ProfileApp> {
           ],
         ),
       ),
+    )
     );
   }
 }

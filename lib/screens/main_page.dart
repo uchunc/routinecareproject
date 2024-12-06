@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart'; // 이미지 선택을 위한 패키지
 import '../widgets/calendar.dart';
 import '../widgets/journal_entry.dart';
 import 'community_page.dart'; // 커뮤니티 페이지
@@ -11,8 +12,7 @@ class MainPage extends StatefulWidget {
   _MainPageState createState() => _MainPageState();
 }
 
-class _MainPageState extends State<MainPage>
-    with SingleTickerProviderStateMixin {
+class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin {
   DateTime selectedDate = DateTime.now();
   Map<String, List<String>> journalEntries = {}; // 날짜별 일지 저장
   late TabController controller;
@@ -20,6 +20,7 @@ class _MainPageState extends State<MainPage>
   String formatDate(DateTime date) {
     return "${date.year}-${date.month}-${date.day}";
   }
+
 
   @override
   void initState() {
@@ -82,55 +83,84 @@ class _MainPageState extends State<MainPage>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: buildAppBar(),
-      body: TabBarView(
-        controller: controller,
+      body: Column(
         children: [
-          // Tab 1: 커뮤니티
-          CommunityApp(), // 커뮤니티 페이지 불러오기
-          // Tab 2: 홈
-          Center(
-            child: Column(
+          // TabBarView는 Column 내에 배치
+          Expanded(
+            child: TabBarView(
+              controller: controller,
               children: [
-                Calendar(
-                  date: selectedDate,
-                  onDateSelected: (DateTime date) {
-                    setState(() {
-                      selectedDate = date;
-                    });
-                  },
-                  journalEntries: journalEntries,
-                ),
-                Expanded(
-                  child: JournalViewer(
-                    selectedDate: selectedDate,
-                    journalEntries: journalEntries,
-                    onEntryChanged: (updatedEntries) {
-                      setState(() {
-                        journalEntries[formatDate(selectedDate)] =
-                            updatedEntries;
-                      });
-                    },
+                // Tab 1: 커뮤니티
+                CommunityApp(),
+                // Tab 2: 홈
+                Center(
+                  child: Column(
+                    children: [
+                      Calendar(
+                        date: selectedDate,
+                        onDateSelected: (DateTime date) {
+                          setState(() {
+                            selectedDate = date;
+                          });
+                        },
+                        journalEntries: journalEntries,
+                      ),
+                      // 바를 Calendar 아래로 배치
+                      Container(
+                        width: double.infinity,
+                        height: 53,
+                        color: Colors.black12, // 바의 배경색
+                        child: Align(
+                          alignment: Alignment.centerRight,
+                          child: Padding(
+                            padding: const EdgeInsets.only(right: 15),
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: JournalViewer(
+                          selectedDate: selectedDate,
+                          journalEntries: journalEntries,
+                          onEntryChanged: (updatedJournalEntries) {
+                            setState(() {
+                              journalEntries = updatedJournalEntries; // 전체 데이터 업데이트
+                            });
+                          },
+                        ),
+                      ),
+                    ],
                   ),
                 ),
+                // Tab 3: 프로필
+                ProfileApp(),
               ],
             ),
           ),
-
-          // Tab 3: 프로필
-          ProfileApp(), // 프로필 페이지 불러오기
         ],
       ),
-      bottomNavigationBar: TabBar(
-        controller: controller,
-        tabs: const <Tab>[
-          Tab(icon: Icon(Icons.group), text: '커뮤니티'),
-          Tab(icon: Icon(Icons.home), text: '홈'),
-          Tab(icon: Icon(Icons.person), text: '프로필'),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: controller.index,
+        onTap: (index) {
+          setState(() {
+            controller.index = index;
+          });
+        },
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.group),
+            label: '커뮤니티',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: '홈',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: '프로필',
+          ),
         ],
-        labelColor: Colors.deepPurple,
-        unselectedLabelColor: Colors.grey,
-        indicatorColor: Colors.deepPurple,
       ),
     );
   }
+
 }

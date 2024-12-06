@@ -86,7 +86,7 @@ class _CalendarState extends State<Calendar> {
       return Colors.blue; // 선택된 날짜
     } else {
       String formattedDate =
-          "${currentDate.year}-${currentDate.month}-${currentDate.day}";
+          "${currentDate.year}-${currentDate.month.toString().padLeft(2, '0')}-${currentDate.day.toString().padLeft(2, '0')}";
       if (widget.journalEntries.containsKey(formattedDate) &&
           widget.journalEntries[formattedDate]!.isNotEmpty) {
         return Colors.green; // 일지가 있는 날짜
