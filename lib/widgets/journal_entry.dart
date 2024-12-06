@@ -61,7 +61,27 @@ class _JournalViewerState extends State<JournalViewer> with SingleTickerProvider
     }
   }
 
-  // 모든 날짜별 이미지를 로드하여 정렬
+  void addJournalPage() async {
+    final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+
+    if (pickedFile != null) {
+      setState(() {
+        // 날짜를 두 자릿수 형식으로 포맷
+        String dateKey = "${widget.selectedDate.year}-${widget.selectedDate.month.toString().padLeft(2, '0')}-${widget.selectedDate.day.toString().padLeft(2, '0')}";
+
+        // 날짜에 맞는 리스트에 이미지 경로 추가
+        widget.journalEntries.putIfAbsent(dateKey, () => []);
+        widget.journalEntries[dateKey]!.add(pickedFile.path);
+
+        widget.onEntryChanged(widget.journalEntries);
+
+        // 이미지가 추가된 후 모든 항목을 로드하고 날짜별로 정렬
+        _loadAllEntries();  // 이 메서드는 날짜별로 정렬된 이미지를 로드하고 UI를 갱신
+      });
+    }
+  }
+
+
   void _loadAllEntries() {
     allEntries = [];
     widget.journalEntries.forEach((date, entries) {
@@ -70,32 +90,15 @@ class _JournalViewerState extends State<JournalViewer> with SingleTickerProvider
       }
     });
 
-    // 날짜순 정렬
+    // 최신 날짜가 가장 앞에 오도록 역순 정렬
     allEntries.sort((a, b) {
       DateTime dateA = DateTime.parse(a.key);
       DateTime dateB = DateTime.parse(b.key);
-      return dateA.compareTo(dateB);
+      return dateB.compareTo(dateA); // 역순 정렬
     });
 
+    // setState 호출하여 UI 갱신
     setState(() {});
-  }
-
-  // 이미지를 추가하는 함수
-  void addJournalPage() async {
-    final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery);
-
-    if (pickedFile != null) {
-      setState(() {
-        String dateKey = "${widget.selectedDate.year}-${widget.selectedDate.month}-${widget.selectedDate.day}";
-
-        // 날짜에 맞는 리스트에 이미지 경로 추가
-        widget.journalEntries.putIfAbsent(dateKey, () => []);
-        widget.journalEntries[dateKey]!.add(pickedFile.path);
-
-        widget.onEntryChanged(widget.journalEntries);
-        _loadAllEntries(); // 데이터 재정렬
-      });
-    }
   }
 
   void _showImageDialog(String imagePath) {
