@@ -26,10 +26,16 @@ class _JournalViewerState extends State<JournalViewer> with SingleTickerProvider
   late Animation<double> _animation;
   int? selectedIndex;
 
+  late FocusNode _textFieldFocusNode; // FocusNode 추가
+  TextEditingController _textController = TextEditingController(); // 텍스트 컨트롤러
+
   @override
   void initState() {
     super.initState();
     _loadAllEntries();
+
+    // FocusNode 초기화
+    _textFieldFocusNode = FocusNode();
 
     // 애니메이션 초기화
     _controller = AnimationController(
@@ -37,6 +43,14 @@ class _JournalViewerState extends State<JournalViewer> with SingleTickerProvider
       vsync: this,
     );
     _animation = Tween<double>(begin: 0.0, end: 0.3).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+
+    _textFieldFocusNode.addListener(() {
+      if (_textFieldFocusNode.hasFocus) {
+        _controller.forward(); // 텍스트 필드가 활성화되면 애니메이션 실행
+      } else {
+        _controller.reverse(); // 텍스트 필드가 비활성화되면 이미지 크기 복원
+      }
+    });
   }
 
   @override
@@ -85,8 +99,12 @@ class _JournalViewerState extends State<JournalViewer> with SingleTickerProvider
   }
 
   void _showImageDialog(String imagePath) {
-    TextEditingController textController = TextEditingController(); // 초기화
+    _textController.clear(); // 텍스트 필드 초기화
 
+    // 텍스트 색상을 결정 (예: 흰색, 회색, 검정색 등)
+    final textColor = Colors.white; // 여기에 동적으로 텍스트 색을 지정할 수 있습니다.
+
+    // 다이얼로그 표시
     showDialog(
       context: context,
       barrierDismissible: true,
@@ -97,11 +115,11 @@ class _JournalViewerState extends State<JournalViewer> with SingleTickerProvider
           child: Stack(
             alignment: Alignment.center,
             children: [
-              // 블러 처리된 배경
+              // 배경 블러 처리
               BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                 child: Container(
-                  color: Colors.black.withOpacity(0.5),
+                  // color: Colors.black.withOpacity(0.5),
                 ),
               ),
               SingleChildScrollView(  // Column을 SingleChildScrollView로 감쌈
@@ -112,36 +130,64 @@ class _JournalViewerState extends State<JournalViewer> with SingleTickerProvider
                     AnimatedBuilder(
                       animation: _animation,
                       builder: (context, child) {
-                        return Container(
-                          height: MediaQuery.of(context).size.height * (1 - _animation.value), // 이미지 크기 조정
-                          child: Image.file(
-                            File(imagePath),
-                            fit: BoxFit.contain,
-                            width: MediaQuery.of(context).size.width * 0.8,
-                          ),
+                        return FutureBuilder<Image>(
+                          future: _loadImage(imagePath),  // 이미지 로드
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState == ConnectionState.waiting) {
+                              return CircularProgressIndicator();
+                            }
+
+                            if (!snapshot.hasData) {
+                              return Container();
+                            }
+
+                            final image = snapshot.data!;
+                            final width = image.width?.toDouble() ?? 100.0; // 기본값 100.0
+                            final height = image.height?.toDouble() ?? 100.0; // 기본값 100.0
+
+                            final aspectRatio = height / width;
+
+                            return Container(
+                              width: MediaQuery.of(context).size.width * 1,
+                              height: MediaQuery.of(context).size.width * 0.8 * aspectRatio, // 비율에 맞는 높이
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: textColor,  // 텍스트 색상으로 테두리 색상 설정
+                                  width: 20,  // 테두리 두께
+                                ),
+                                // borderRadius: BorderRadius.circular(10),  // 테두리 모서리 둥글기
+                              ),
+                              child: FittedBox(
+                                fit: BoxFit.contain,  // 이미지를 비율에 맞게 크기를 조정
+                                child: Image.file(
+                                  File(imagePath),
+                                ),
+                              ),
+                            );
+                          },
                         );
                       },
                     ),
                     // 텍스트 입력 컨테이너 (이미지 밑에 배치)
                     Container(
-                      margin: const EdgeInsets.only(top: 20),
                       padding: const EdgeInsets.all(15),
                       decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(10),
+                        color: textColor, // 텍스트 색상에 맞는 배경 색상
+                        // borderRadius: BorderRadius.circular(10),
                       ),
                       child: Column(
                         children: [
+                          // 텍스트 필드
                           TextField(
-                            controller: textController, // 항상 초기화된 controller 사용
+                            controller: _textController,
                             decoration: InputDecoration(
-                              labelText: "Enter your notes",
+                              labelText: "일지",
+                              labelStyle: TextStyle(color: Colors.black), // 라벨 텍스트 색상
                               border: OutlineInputBorder(),
                             ),
-                            maxLines: 3,
-                            onTap: () {
-                              _controller.forward(); // 텍스트 필드가 활성화되면 애니메이션 실행
-                            },
+                            style: TextStyle(color: Colors.black), // 텍스트 색상
+                            maxLines: 5,
+                            keyboardType: TextInputType.multiline,
                           ),
                           SizedBox(height: 10),
                           ElevatedButton(
@@ -154,14 +200,22 @@ class _JournalViewerState extends State<JournalViewer> with SingleTickerProvider
                         ],
                       ),
                     ),
-                    // 닫기 버튼
-                    ElevatedButton(
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                      },
-                      child: Text("Close"),
-                    ),
                   ],
+                ),
+              ),
+              // X 아이콘을 왼쪽 상단에 배치
+              Positioned(
+                top: 10,
+                left: 10,
+                child: GestureDetector(
+                  onTap: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: Icon(
+                    Icons.close,
+                    color: Colors.white,
+                    size: 30,
+                  ),
                 ),
               ),
             ],
@@ -171,23 +225,32 @@ class _JournalViewerState extends State<JournalViewer> with SingleTickerProvider
     );
   }
 
-
-
+  // 이미지를 로드하는 Future 메소드
+  Future<Image> _loadImage(String imagePath) async {
+    final image = Image.file(File(imagePath));
+    await precacheImage(image.image, context); // 이미지를 미리 로드
+    return image;
+  }
 
   @override
   Widget build(BuildContext context) {
     return GridView.builder(
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        crossAxisSpacing: 8.0,
-        mainAxisSpacing: 8.0,
+        crossAxisCount: 3,               // 3열로 배치
+        crossAxisSpacing: 0.0,           // 열 간 간격 0
+        mainAxisSpacing: 0.0,            // 행 간 간격 0
+        childAspectRatio: 1.0,           // 자식 항목의 비율을 정사각형으로 설정
       ),
       itemCount: allEntries.length + 1, // 이미지 + 추가 버튼
       itemBuilder: (context, index) {
         if (index == allEntries.length) {
+          // + 아이콘 추가
           return GestureDetector(
             onTap: addJournalPage,
-            child: Icon(Icons.add_a_photo, size: 40),
+            child: Container(
+              color: Colors.grey[200],
+              child: Icon(Icons.add_a_photo, size: 40),
+            ),
           );
         }
 
