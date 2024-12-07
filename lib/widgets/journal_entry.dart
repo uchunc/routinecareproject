@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import '../database/database_helper.dart';
 import 'dart:io';
 import 'dart:ui';
 
@@ -65,30 +66,132 @@ class _JournalViewerState extends State<JournalViewer> with SingleTickerProvider
     final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery);
 
     if (pickedFile != null) {
-      setState(() {
-        // 날짜를 두 자릿수 형식으로 포맷
-        String dateKey = "${widget.selectedDate.year}-${widget.selectedDate.month.toString().padLeft(2, '0')}-${widget.selectedDate.day.toString().padLeft(2, '0')}";
+      String imagePath = pickedFile.path;
 
-        // 날짜에 맞는 리스트에 이미지 경로 추가
-        widget.journalEntries.putIfAbsent(dateKey, () => []);
-        widget.journalEntries[dateKey]!.add(pickedFile.path);
+      // MainPage 스타일의 다이얼로그 생성
+      showDialog(
+        context: context,
+        builder: (context) {
+          return Dialog(
+            insetPadding: EdgeInsets.all(10),
+            backgroundColor: Colors.transparent,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // 배경 블러 처리
+                BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                  child: Container(),
+                ),
+                SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // 선택한 이미지 표시
+                      Container(
+                        width: MediaQuery.of(context).size.width * 0.8,
+                        height: MediaQuery.of(context).size.width * 0.8,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.white, width: 5),
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(15),
+                          child: Image.file(
+                            File(imagePath),
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 20),
+                      // 텍스트 입력 필드
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: TextField(
+                          controller: _textController,
+                          decoration: InputDecoration(
+                            hintText: "일지를 작성하세요...",
+                            border: InputBorder.none,
+                          ),
+                          maxLines: 5,
+                        ),
+                      ),
+                      SizedBox(height: 20),
+                      // Save 버튼
+                      ElevatedButton(
+                        onPressed: () async {
+                          // SQLite에 데이터 저장
+                          String dateKey = "${widget.selectedDate.year}-${widget.selectedDate.month.toString().padLeft(2, '0')}-${widget.selectedDate.day.toString().padLeft(2, '0')}";
+                          String journalText = _textController.text;
 
-        widget.onEntryChanged(widget.journalEntries);
+                          await DatabaseHelper().insertJournal(dateKey, imagePath, journalText);
 
-        // 이미지가 추가된 후 모든 항목을 로드하고 날짜별로 정렬
-        _loadAllEntries();  // 이 메서드는 날짜별로 정렬된 이미지를 로드하고 UI를 갱신
-      });
+                          // UI 업데이트
+                          setState(() {
+                            widget.journalEntries.putIfAbsent(dateKey, () => []);
+                            widget.journalEntries[dateKey]!.add(imagePath);
+                            widget.onEntryChanged(widget.journalEntries);
+                          });
+
+                          // 데이터 새로고침 및 다이얼로그 닫기
+                          _loadAllEntries();
+                          Navigator.of(context).pop();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blueAccent,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
+                          child: Text(
+                            "Save",
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // 닫기 아이콘
+                Positioned(
+                  top: 10,
+                  right: 10,
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.of(context).pop();
+                    },
+                    child: CircleAvatar(
+                      backgroundColor: Colors.black54,
+                      child: Icon(Icons.close, color: Colors.white),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      );
     }
   }
 
-
-  void _loadAllEntries() {
+  void _loadAllEntries() async {
     allEntries = [];
-    widget.journalEntries.forEach((date, entries) {
-      for (var imagePath in entries) {
-        allEntries.add(MapEntry(date, imagePath));
-      }
-    });
+
+    // SQLite에서 데이터 로드
+    List<Map<String, dynamic>> entries = await DatabaseHelper().getJournalsByDate(
+        "${widget.selectedDate.year}-${widget.selectedDate.month.toString().padLeft(2, '0')}-${widget.selectedDate.day.toString().padLeft(2, '0')}"
+    );
+
+    // SQLite 데이터를 allEntries에 추가
+    for (var entry in entries) {
+      allEntries.add(MapEntry(entry['date'], entry['imagePath']));
+    }
 
     // 최신 날짜가 가장 앞에 오도록 역순 정렬
     allEntries.sort((a, b) {
@@ -97,15 +200,18 @@ class _JournalViewerState extends State<JournalViewer> with SingleTickerProvider
       return dateB.compareTo(dateA); // 역순 정렬
     });
 
-    // setState 호출하여 UI 갱신
+    // UI 갱신
     setState(() {});
   }
 
-  void _showImageDialog(String imagePath) {
-    _textController.clear(); // 텍스트 필드 초기화
 
-    // 텍스트 색상을 결정 (예: 흰색, 회색, 검정색 등)
-    final textColor = Colors.white; // 여기에 동적으로 텍스트 색을 지정할 수 있습니다.
+
+  void _showImageDialog(String imagePath) async {
+    // SQLite에서 일지를 가져옴
+    final journalEntry = await DatabaseHelper().getJournalByImagePath(imagePath);
+
+    // 저장된 일지 텍스트 가져오기
+    final journalText = journalEntry != null ? journalEntry['journal'] : '';
 
     // 다이얼로그 표시
     showDialog(
@@ -118,106 +224,84 @@ class _JournalViewerState extends State<JournalViewer> with SingleTickerProvider
           child: Stack(
             alignment: Alignment.center,
             children: [
-              // 배경 블러 처리
               BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                child: Container(
-                  // color: Colors.black.withOpacity(0.5),
-                ),
+                child: Container(),
               ),
-              SingleChildScrollView(  // Column을 SingleChildScrollView로 감쌈
+              SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // 이미지 표시
-                    AnimatedBuilder(
-                      animation: _animation,
-                      builder: (context, child) {
-                        return FutureBuilder<Image>(
-                          future: _loadImage(imagePath),  // 이미지 로드
-                          builder: (context, snapshot) {
-                            if (snapshot.connectionState == ConnectionState.waiting) {
-                              return CircularProgressIndicator();
-                            }
-
-                            if (!snapshot.hasData) {
-                              return Container();
-                            }
-
-                            final image = snapshot.data!;
-                            final width = image.width?.toDouble() ?? 100.0; // 기본값 100.0
-                            final height = image.height?.toDouble() ?? 100.0; // 기본값 100.0
-
-                            final aspectRatio = height / width;
-
-                            return Container(
-                              width: MediaQuery.of(context).size.width * 1,
-                              height: MediaQuery.of(context).size.width * 0.8 * aspectRatio, // 비율에 맞는 높이
-                              decoration: BoxDecoration(
-                                border: Border.all(
-                                  color: textColor,  // 텍스트 색상으로 테두리 색상 설정
-                                  width: 20,  // 테두리 두께
-                                ),
-                                // borderRadius: BorderRadius.circular(10),  // 테두리 모서리 둥글기
-                              ),
-                              child: FittedBox(
-                                fit: BoxFit.contain,  // 이미지를 비율에 맞게 크기를 조정
-                                child: Image.file(
-                                  File(imagePath),
-                                ),
-                              ),
-                            );
-                          },
-                        );
-                      },
-                    ),
-                    // 텍스트 입력 컨테이너 (이미지 밑에 배치)
+                    // 선택한 이미지 표시
                     Container(
-                      padding: const EdgeInsets.all(15),
+                      width: MediaQuery.of(context).size.width * 0.8,
+                      height: MediaQuery.of(context).size.width * 0.8,
                       decoration: BoxDecoration(
-                        color: textColor, // 텍스트 색상에 맞는 배경 색상
-                        // borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.white, width: 5),
+                        borderRadius: BorderRadius.circular(15),
                       ),
-                      child: Column(
-                        children: [
-                          // 텍스트 필드
-                          TextField(
-                            controller: _textController,
-                            decoration: InputDecoration(
-                              labelText: "일지",
-                              labelStyle: TextStyle(color: Colors.black), // 라벨 텍스트 색상
-                              border: OutlineInputBorder(),
-                            ),
-                            style: TextStyle(color: Colors.black), // 텍스트 색상
-                            maxLines: 5,
-                            keyboardType: TextInputType.multiline,
-                          ),
-                          SizedBox(height: 10),
-                          ElevatedButton(
-                            onPressed: () {
-                              // 저장 로직 추가 가능
-                              Navigator.of(context).pop();
-                            },
-                            child: Text("Save"),
-                          ),
-                        ],
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(15),
+                        child: Image.file(
+                          File(imagePath),
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 20),
+                    // 저장된 일지 표시
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        journalText.isNotEmpty ? journalText : "일지가 없습니다.",
+                        style: TextStyle(fontSize: 16, color: Colors.black),
+                      ),
+                    ),
+                    SizedBox(height: 20),
+                    // 지우기 버튼
+                    ElevatedButton(
+                      onPressed: () async {
+                        // 데이터베이스에서 삭제
+                        await DatabaseHelper().deleteJournalByImagePath(imagePath);
+
+                        // UI 업데이트
+                        setState(() {
+                          allEntries.removeWhere((entry) => entry.value == imagePath);
+                        });
+
+                        Navigator.of(context).pop(); // 다이얼로그 닫기
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.redAccent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
+                        child: Text(
+                          "지우기",
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
-              // X 아이콘을 왼쪽 상단에 배치
               Positioned(
                 top: 10,
-                left: 10,
+                right: 10,
                 child: GestureDetector(
                   onTap: () {
                     Navigator.of(context).pop();
                   },
-                  child: Icon(
-                    Icons.close,
-                    color: Colors.white,
-                    size: 30,
+                  child: CircleAvatar(
+                    backgroundColor: Colors.black54,
+                    child: Icon(Icons.close, color: Colors.white),
                   ),
                 ),
               ),
@@ -227,6 +311,8 @@ class _JournalViewerState extends State<JournalViewer> with SingleTickerProvider
       },
     );
   }
+
+
 
   // 이미지를 로드하는 Future 메소드
   Future<Image> _loadImage(String imagePath) async {

@@ -81,11 +81,16 @@ class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin
 
   @override
   Widget build(BuildContext context) {
+    // 선택된 날짜의 데이터를 필터링
+    String formattedDate = "${selectedDate.year}-${selectedDate.month.toString().padLeft(2, '0')}-${selectedDate.day.toString().padLeft(2, '0')}";
+    Map<String, List<String>> filteredJournalEntries = {
+      formattedDate: journalEntries[formattedDate] ?? [],
+    };
+
     return Scaffold(
       appBar: buildAppBar(),
       body: Column(
         children: [
-          // TabBarView는 Column 내에 배치
           Expanded(
             child: TabBarView(
               controller: controller,
@@ -105,7 +110,6 @@ class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin
                         },
                         journalEntries: journalEntries,
                       ),
-                      // 바를 Calendar 아래로 배치
                       Container(
                         width: double.infinity,
                         height: 53,
@@ -120,7 +124,7 @@ class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin
                       Expanded(
                         child: JournalViewer(
                           selectedDate: selectedDate,
-                          journalEntries: journalEntries,
+                          journalEntries: filteredJournalEntries, // 필터링된 데이터 전달
                           onEntryChanged: (updatedJournalEntries) {
                             setState(() {
                               journalEntries = updatedJournalEntries; // 전체 데이터 업데이트
@@ -162,5 +166,6 @@ class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin
       ),
     );
   }
+
 
 }
